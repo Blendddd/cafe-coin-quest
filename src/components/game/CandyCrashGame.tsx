@@ -16,6 +16,8 @@ interface GamePiece {
   type: 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
   row: number;
   col: number;
+  special?: 'bomb' | 'striped' | 'wrapped';
+  isAnimating?: boolean;
 }
 
 interface GameStats {
@@ -43,6 +45,8 @@ export const CandyCrashGame = () => {
   const { gameUser, awardCoins } = useGameUser();
   const { toast } = useToast();
   const gameRef = useRef<HTMLDivElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [animatingPieces, setAnimatingPieces] = useState<Set<string>>(new Set());
 
   const generateRandomPiece = (row: number, col: number): GamePiece => ({
     id: `${row}-${col}-${Date.now()}`,
@@ -64,47 +68,137 @@ export const CandyCrashGame = () => {
   }, []);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
-    const matches: { row: number; col: number }[] = [];
+    const matches: { row: number; col: number; type: string; matchType: 'horizontal' | 'vertical' | 'L' | 'T' }[] = [];
+    const horizontalMatches: { [key: string]: { row: number; col: number; length: number } } = {};
+    const verticalMatches: { [key: string]: { row: number; col: number; length: number } } = {};
     
-    // Check horizontal matches
+    // Find horizontal matches
     for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE - 2; col++) {
-        if (
-          currentGrid[row][col].type === currentGrid[row][col + 1].type &&
-          currentGrid[row][col].type === currentGrid[row][col + 2].type
-        ) {
-          matches.push({ row, col }, { row, col: col + 1 }, { row, col: col + 2 });
+      let currentMatchLength = 1;
+      let currentType = currentGrid[row][0].type;
+      
+      for (let col = 1; col < GRID_SIZE; col++) {
+        if (currentGrid[row][col].type === currentType) {
+          currentMatchLength++;
+        } else {
+          if (currentMatchLength >= 3) {
+            const key = `${row}-${col - currentMatchLength}`;
+            horizontalMatches[key] = { row, col: col - currentMatchLength, length: currentMatchLength };
+            for (let i = 0; i < currentMatchLength; i++) {
+              matches.push({ 
+                row, 
+                col: col - currentMatchLength + i, 
+                type: currentType,
+                matchType: 'horizontal'
+              });
+            }
+          }
+          currentMatchLength = 1;
+          currentType = currentGrid[row][col].type;
+        }
+      }
+      // Check end of row
+      if (currentMatchLength >= 3) {
+        const key = `${row}-${GRID_SIZE - currentMatchLength}`;
+        horizontalMatches[key] = { row, col: GRID_SIZE - currentMatchLength, length: currentMatchLength };
+        for (let i = 0; i < currentMatchLength; i++) {
+          matches.push({ 
+            row, 
+            col: GRID_SIZE - currentMatchLength + i, 
+            type: currentType,
+            matchType: 'horizontal'
+          });
         }
       }
     }
     
-    // Check vertical matches
+    // Find vertical matches
     for (let col = 0; col < GRID_SIZE; col++) {
-      for (let row = 0; row < GRID_SIZE - 2; row++) {
-        if (
-          currentGrid[row][col].type === currentGrid[row + 1][col].type &&
-          currentGrid[row][col].type === currentGrid[row + 2][col].type
-        ) {
-          matches.push({ row, col }, { row: row + 1, col }, { row: row + 2, col });
+      let currentMatchLength = 1;
+      let currentType = currentGrid[0][col].type;
+      
+      for (let row = 1; row < GRID_SIZE; row++) {
+        if (currentGrid[row][col].type === currentType) {
+          currentMatchLength++;
+        } else {
+          if (currentMatchLength >= 3) {
+            const key = `${row - currentMatchLength}-${col}`;
+            verticalMatches[key] = { row: row - currentMatchLength, col, length: currentMatchLength };
+            for (let i = 0; i < currentMatchLength; i++) {
+              matches.push({ 
+                row: row - currentMatchLength + i, 
+                col, 
+                type: currentType,
+                matchType: 'vertical'
+              });
+            }
+          }
+          currentMatchLength = 1;
+          currentType = currentGrid[row][col].type;
+        }
+      }
+      // Check end of column
+      if (currentMatchLength >= 3) {
+        const key = `${GRID_SIZE - currentMatchLength}-${col}`;
+        verticalMatches[key] = { row: GRID_SIZE - currentMatchLength, col, length: currentMatchLength };
+        for (let i = 0; i < currentMatchLength; i++) {
+          matches.push({ 
+            row: GRID_SIZE - currentMatchLength + i, 
+            col, 
+            type: currentType,
+            matchType: 'vertical'
+          });
         }
       }
     }
     
-    return matches.filter((match, index, self) => 
-      self.findIndex(m => m.row === match.row && m.col === match.col) === index
-    );
+    return {
+      matches: matches.filter((match, index, self) => 
+        self.findIndex(m => m.row === match.row && m.col === match.col) === index
+      ),
+      horizontalMatches,
+      verticalMatches
+    };
   }, []);
 
-  const removeMatches = useCallback((currentGrid: GamePiece[][], matches: { row: number; col: number }[]) => {
+  const removeMatches = useCallback((currentGrid: GamePiece[][], matchResult: { matches: { row: number; col: number; type: string; matchType: string }[], horizontalMatches: any, verticalMatches: any }) => {
     const newGrid = currentGrid.map(row => [...row]);
-    matches.forEach(({ row, col }) => {
+    const specialPieces: { row: number, col: number, special: 'bomb' | 'striped' | 'wrapped' }[] = [];
+    
+    // Create special pieces for matches of 4+
+    Object.values(matchResult.horizontalMatches).forEach((match: any) => {
+      if (match.length >= 4) {
+        const centerCol = Math.floor(match.col + match.length / 2);
+        specialPieces.push({ 
+          row: match.row, 
+          col: centerCol, 
+          special: match.length >= 5 ? 'bomb' : 'striped' 
+        });
+      }
+    });
+    
+    Object.values(matchResult.verticalMatches).forEach((match: any) => {
+      if (match.length >= 4) {
+        const centerRow = Math.floor(match.row + match.length / 2);
+        specialPieces.push({ 
+          row: centerRow, 
+          col: match.col, 
+          special: match.length >= 5 ? 'bomb' : 'striped' 
+        });
+      }
+    });
+    
+    // Remove matched pieces
+    matchResult.matches.forEach(({ row, col }) => {
       newGrid[row][col] = { ...newGrid[row][col], type: 'red' as any, id: 'removed' };
     });
-    return newGrid;
+    
+    return { newGrid, specialPieces };
   }, []);
 
   const dropPieces = useCallback((currentGrid: GamePiece[][]) => {
     const newGrid = currentGrid.map(row => [...row]);
+    let hasDropped = false;
     
     for (let col = 0; col < GRID_SIZE; col++) {
       let writeIndex = GRID_SIZE - 1;
@@ -112,8 +206,9 @@ export const CandyCrashGame = () => {
       for (let row = GRID_SIZE - 1; row >= 0; row--) {
         if (newGrid[row][col].id !== 'removed') {
           if (writeIndex !== row) {
-            newGrid[writeIndex][col] = { ...newGrid[row][col], row: writeIndex };
+            newGrid[writeIndex][col] = { ...newGrid[row][col], row: writeIndex, isAnimating: true };
             newGrid[row][col] = { ...generateRandomPiece(row, col), id: 'removed' };
+            hasDropped = true;
           }
           writeIndex--;
         }
@@ -121,28 +216,58 @@ export const CandyCrashGame = () => {
       
       // Fill empty spaces at the top
       for (let row = writeIndex; row >= 0; row--) {
-        newGrid[row][col] = generateRandomPiece(row, col);
+        newGrid[row][col] = { ...generateRandomPiece(row, col), isAnimating: true };
+        hasDropped = true;
       }
     }
     
-    return newGrid;
+    return { newGrid, hasDropped };
   }, []);
 
-  const processMatches = useCallback(() => {
-    const matches = findMatches(grid);
-    if (matches.length === 0) return false;
+  const processMatches = useCallback(async () => {
+    if (isProcessing) return false;
+    setIsProcessing(true);
     
-    const newGrid = removeMatches(grid, matches);
-    const droppedGrid = dropPieces(newGrid);
+    const matchResult = findMatches(grid);
+    if (matchResult.matches.length === 0) {
+      setIsProcessing(false);
+      return false;
+    }
+    
+    const { newGrid, specialPieces } = removeMatches(grid, matchResult);
+    
+    // Add special pieces to the grid
+    specialPieces.forEach(({ row, col, special }) => {
+      if (newGrid[row][col].id !== 'removed') {
+        newGrid[row][col] = { ...newGrid[row][col], special };
+      }
+    });
+    
+    const { newGrid: droppedGrid, hasDropped } = dropPieces(newGrid);
     
     setGrid(droppedGrid);
     setGameStats(prev => ({
       ...prev,
-      score: prev.score + matches.length * 10,
+      score: prev.score + matchResult.matches.length * 10,
     }));
     
+    // Clear animations after a delay
+    setTimeout(() => {
+      setGrid(currentGrid => currentGrid.map(row => 
+        row.map(piece => ({ ...piece, isAnimating: false }))
+      ));
+    }, 300);
+    
+    // Chain reaction - check for new matches after pieces settle
+    setTimeout(async () => {
+      const hasNewMatches = await processMatches();
+      if (!hasNewMatches) {
+        setIsProcessing(false);
+      }
+    }, 600);
+    
     return true;
-  }, [grid, findMatches, removeMatches, dropPieces]);
+  }, [grid, findMatches, removeMatches, dropPieces, isProcessing]);
 
   const swapPieces = useCallback((row1: number, col1: number, row2: number, col2: number) => {
     const newGrid = grid.map(row => [...row]);
@@ -171,9 +296,9 @@ export const CandyCrashGame = () => {
       
       if (isValidMove(selectedPiece.row, selectedPiece.col, row, col)) {
         const newGrid = swapPieces(selectedPiece.row, selectedPiece.col, row, col);
-        const matches = findMatches(newGrid);
+        const matchResult = findMatches(newGrid);
         
-        if (matches.length > 0) {
+        if (matchResult.matches.length > 0) {
           setGrid(newGrid);
           setGameStats(prev => ({ ...prev, moves: prev.moves - 1 }));
           setTimeout(() => processMatches(), 300);
@@ -266,7 +391,7 @@ export const CandyCrashGame = () => {
         {!gameActive ? (
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Match 3 or more candies to earn points and coins!
+              Match 3 or more candies to earn points and coins! Create special pieces by matching 4+ candies in a row. Watch for chain reactions as pieces cascade down!
             </p>
             <Button onClick={startGame} size="lg" className="w-full">
               🎮 Start Game
@@ -303,8 +428,11 @@ export const CandyCrashGame = () => {
                   <button
                     key={piece.id}
                     onClick={() => handlePieceClick(rowIndex, colIndex)}
+                    disabled={isProcessing}
                     className={`
-                      aspect-square rounded-md transition-all duration-200 hover:scale-105 bg-white
+                      aspect-square rounded-md transition-all duration-300 hover:scale-105 bg-white relative
+                      ${piece.isAnimating ? 'animate-bounce' : ''}
+                      ${isProcessing ? 'opacity-70' : ''}
                       ${
                         selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
                           ? 'ring-2 ring-primary scale-110'
@@ -315,8 +443,21 @@ export const CandyCrashGame = () => {
                     <img
                       src={getPieceImage(piece.type)}
                       alt={`${piece.type} candy`}
-                      className="w-full h-full object-contain rounded-md"
+                      className={`w-full h-full object-contain rounded-md transition-transform duration-300 ${
+                        piece.isAnimating ? 'scale-90' : 'scale-100'
+                      }`}
                     />
+                    {piece.special === 'bomb' && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl animate-pulse">💣</span>
+                      </div>
+                    )}
+                    {piece.special === 'striped' && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                    )}
+                    {piece.special === 'wrapped' && (
+                      <div className="absolute inset-0 border-2 border-yellow-400 rounded-md animate-pulse"></div>
+                    )}
                   </button>
                 ))
               )}
