@@ -28,7 +28,7 @@ interface GameStats {
 }
 
 const COLORS = ['pizza', 'wing', 'pepperoni', 'cheese', 'mushroom', 'pepper'] as const;
-const GRID_SIZE = 8;
+const GRID_SIZE = 6;
 const INITIAL_MOVES = 25; // Reduced from 30
 const MAX_CASCADES = 3; // Reduced from 6
 const MIN_COLORS = 4; // Start with fewer colors
@@ -123,19 +123,50 @@ export const CandyCrashGame = () => {
   const generateRandomPiece = (row: number, col: number): GamePiece => 
     generateSafePiece(row, col);
 
+  const validateGridForMatches = (gridToCheck: GamePiece[][]): boolean => {
+    const matchResult = findMatches(gridToCheck);
+    return matchResult.matches.length === 0;
+  };
+
   const initializeGrid = useCallback(() => {
-    const newGrid: GamePiece[][] = [];
-    // Build grid row by row to avoid initial matches
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const newGrid: GamePiece[][] = [];
+      // Build grid row by row to avoid initial matches
+      for (let row = 0; row < GRID_SIZE; row++) {
+        const gridRow: GamePiece[] = [];
+        for (let col = 0; col < GRID_SIZE; col++) {
+          // Pass the current grid state to generateSafePiece
+          const piece = generateSafePiece(row, col, newGrid);
+          gridRow.push(piece);
+        }
+        newGrid.push(gridRow);
+      }
+      
+      // Validate the grid has no initial matches
+      if (validateGridForMatches(newGrid)) {
+        setGrid(newGrid);
+        return;
+      }
+      
+      attempts++;
+      console.log(`Grid attempt ${attempts} had matches, regenerating...`);
+    }
+    
+    // Fallback: set grid even if it has matches (better than infinite loop)
+    console.warn('Could not generate match-free grid after 10 attempts');
+    const fallbackGrid: GamePiece[][] = [];
     for (let row = 0; row < GRID_SIZE; row++) {
       const gridRow: GamePiece[] = [];
       for (let col = 0; col < GRID_SIZE; col++) {
-        // Pass the current grid state to generateSafePiece
-        const piece = generateSafePiece(row, col, newGrid);
+        const piece = generateSafePiece(row, col, fallbackGrid);
         gridRow.push(piece);
       }
-      newGrid.push(gridRow);
+      fallbackGrid.push(gridRow);
     }
-    setGrid(newGrid);
+    setGrid(fallbackGrid);
   }, [generateSafePiece]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
@@ -548,7 +579,7 @@ export const CandyCrashGame = () => {
             
             <div 
               ref={gameRef}
-              className="grid grid-cols-8 gap-2 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg shadow-inner"
+              className="grid grid-cols-6 gap-2 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg shadow-inner"
               style={{ aspectRatio: '1' }}
             >
               {grid.map((row, rowIndex) =>
