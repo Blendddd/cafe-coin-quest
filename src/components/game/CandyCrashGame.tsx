@@ -64,58 +64,42 @@ export const CandyCrashGame = () => {
     const availableColors = getAvailableColors(gameStats.level);
     const usedGrid = currentGrid || grid;
     
-    // If no grid exists yet, generate random piece
-    if (!usedGrid || usedGrid.length === 0) {
-      return {
-        id: `${row}-${col}-${Date.now()}-${Math.random()}`,
-        type: availableColors[Math.floor(Math.random() * availableColors.length)],
-        row,
-        col,
-      };
-    }
-
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 50;
     
     while (attempts < maxAttempts) {
       const type = availableColors[Math.floor(Math.random() * availableColors.length)];
+      let isValid = true;
       
-      // Check if this would create immediate horizontal match
-      let horizontalMatch = 0;
-      // Check left
-      if (col > 0 && usedGrid[row]?.[col - 1]?.type === type) {
-        horizontalMatch++;
-        if (col > 1 && usedGrid[row]?.[col - 2]?.type === type) {
-          horizontalMatch++;
-        }
-      }
-      // Check right  
-      if (col < GRID_SIZE - 1 && usedGrid[row]?.[col + 1]?.type === type) {
-        horizontalMatch++;
-        if (col < GRID_SIZE - 2 && usedGrid[row]?.[col + 2]?.type === type) {
-          horizontalMatch++;
-        }
+      // Check horizontal matches (left side)
+      if (col >= 2 && 
+          usedGrid[row]?.[col - 1]?.type === type && 
+          usedGrid[row]?.[col - 2]?.type === type) {
+        isValid = false;
       }
       
-      // Check if this would create immediate vertical match
-      let verticalMatch = 0;
-      // Check above
-      if (row > 0 && usedGrid[row - 1]?.[col]?.type === type) {
-        verticalMatch++;
-        if (row > 1 && usedGrid[row - 2]?.[col]?.type === type) {
-          verticalMatch++;
-        }
-      }
-      // Check below
-      if (row < GRID_SIZE - 1 && usedGrid[row + 1]?.[col]?.type === type) {
-        verticalMatch++;
-        if (row < GRID_SIZE - 2 && usedGrid[row + 2]?.[col]?.type === type) {
-          verticalMatch++;
-        }
+      // Check horizontal matches (mixed)
+      if (col >= 1 && col < GRID_SIZE - 1 &&
+          usedGrid[row]?.[col - 1]?.type === type && 
+          usedGrid[row]?.[col + 1]?.type === type) {
+        isValid = false;
       }
       
-      // If no immediate 3+ match, use this piece
-      if (horizontalMatch < 2 && verticalMatch < 2) {
+      // Check vertical matches (top side)
+      if (row >= 2 && 
+          usedGrid[row - 1]?.[col]?.type === type && 
+          usedGrid[row - 2]?.[col]?.type === type) {
+        isValid = false;
+      }
+      
+      // Check vertical matches (mixed)
+      if (row >= 1 && row < GRID_SIZE - 1 &&
+          usedGrid[row - 1]?.[col]?.type === type && 
+          usedGrid[row + 1]?.[col]?.type === type) {
+        isValid = false;
+      }
+      
+      if (isValid) {
         return {
           id: `${row}-${col}-${Date.now()}-${Math.random()}`,
           type,
@@ -564,7 +548,7 @@ export const CandyCrashGame = () => {
             
             <div 
               ref={gameRef}
-              className="grid grid-cols-8 gap-1 p-4 bg-muted rounded-lg"
+              className="grid grid-cols-8 gap-2 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg shadow-inner"
               style={{ aspectRatio: '1' }}
             >
               {grid.map((row, rowIndex) =>
@@ -574,12 +558,12 @@ export const CandyCrashGame = () => {
                     onClick={() => handlePieceClick(rowIndex, colIndex)}
                     disabled={isProcessing}
                     className={`
-                      aspect-square rounded-md transition-all duration-300 hover:scale-105 bg-white relative
+                      aspect-square rounded-lg transition-all duration-300 hover:scale-105 bg-gradient-to-br from-background to-muted/50 shadow-sm border border-border/20 relative overflow-hidden
                       ${piece.isAnimating ? 'animate-bounce' : ''}
                       ${isProcessing ? 'opacity-70' : ''}
                       ${
                         selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
-                          ? 'ring-2 ring-primary scale-110'
+                          ? 'ring-2 ring-primary scale-110 shadow-lg'
                           : ''
                       }
                     `}
