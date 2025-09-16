@@ -170,125 +170,197 @@ export const CandyCrashGame = () => {
   }, [generateSafePiece]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
-    const matches: { row: number; col: number; type: string; matchType: 'horizontal' | 'vertical' | 'L' | 'T' }[] = [];
-    const horizontalMatches: { [key: string]: { row: number; col: number; length: number } } = {};
-    const verticalMatches: { [key: string]: { row: number; col: number; length: number } } = {};
+    const visited: boolean[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+    const allMatches: { row: number; col: number; type: string; matchType: string; clusterId: number }[] = [];
+    const matchClusters: { 
+      id: number; 
+      positions: { row: number; col: number }[]; 
+      type: string; 
+      size: number;
+      pattern: 'horizontal' | 'vertical' | 'L' | 'T' | 'cross' | 'cluster';
+    }[] = [];
     
-    // Find horizontal matches
+    let clusterId = 0;
+
+    // Flood fill to find connected clusters of same-type pieces
+    const floodFill = (startRow: number, startCol: number, targetType: string): { row: number; col: number }[] => {
+      const cluster: { row: number; col: number }[] = [];
+      const stack = [{ row: startRow, col: startCol }];
+      
+      while (stack.length > 0) {
+        const { row, col } = stack.pop()!;
+        
+        // Check bounds and conditions
+        if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) continue;
+        if (visited[row][col]) continue;
+        if (currentGrid[row][col].type !== targetType) continue;
+        
+        // Mark as visited and add to cluster
+        visited[row][col] = true;
+        cluster.push({ row, col });
+        
+        // Add adjacent cells to stack (4-directional)
+        stack.push(
+          { row: row - 1, col }, // up
+          { row: row + 1, col }, // down
+          { row, col: col - 1 }, // left
+          { row, col: col + 1 }  // right
+        );
+      }
+      
+      return cluster;
+    };
+
+    // Determine pattern type of a cluster
+    const determinePattern = (positions: { row: number; col: number }[]): 'horizontal' | 'vertical' | 'L' | 'T' | 'cross' | 'cluster' => {
+      if (positions.length < 3) return 'cluster';
+      
+      const rows = [...new Set(positions.map(p => p.row))].sort((a, b) => a - b);
+      const cols = [...new Set(positions.map(p => p.col))].sort((a, b) => a - b);
+      
+      // Pure horizontal line
+      if (rows.length === 1 && cols.length >= 3) {
+        const row = rows[0];
+        const sortedCols = cols.sort((a, b) => a - b);
+        // Check if columns are consecutive
+        let consecutive = true;
+        for (let i = 1; i < sortedCols.length; i++) {
+          if (sortedCols[i] !== sortedCols[i-1] + 1) {
+            consecutive = false;
+            break;
+          }
+        }
+        return consecutive ? 'horizontal' : 'cluster';
+      }
+      
+      // Pure vertical line
+      if (cols.length === 1 && rows.length >= 3) {
+        const col = cols[0];
+        const sortedRows = rows.sort((a, b) => a - b);
+        // Check if rows are consecutive
+        let consecutive = true;
+        for (let i = 1; i < sortedRows.length; i++) {
+          if (sortedRows[i] !== sortedRows[i-1] + 1) {
+            consecutive = false;
+            break;
+          }
+        }
+        return consecutive ? 'vertical' : 'cluster';
+      }
+      
+      // Complex patterns (L, T, cross)
+      if (rows.length >= 2 && cols.length >= 2) {
+        if (positions.length >= 5) return 'cross';
+        if (positions.length === 4) return 'T';
+        return 'L';
+      }
+      
+      return 'cluster';
+    };
+
+    // Find all clusters
     for (let row = 0; row < GRID_SIZE; row++) {
-      let currentMatchLength = 1;
-      let currentType = currentGrid[row][0].type;
-      
-      for (let col = 1; col < GRID_SIZE; col++) {
-        if (currentGrid[row][col].type === currentType) {
-          currentMatchLength++;
-        } else {
-          if (currentMatchLength >= 3) {
-            const key = `${row}-${col - currentMatchLength}`;
-            horizontalMatches[key] = { row, col: col - currentMatchLength, length: currentMatchLength };
-            for (let i = 0; i < currentMatchLength; i++) {
-              matches.push({ 
-                row, 
-                col: col - currentMatchLength + i, 
-                type: currentType,
-                matchType: 'horizontal'
+      for (let col = 0; col < GRID_SIZE; col++) {
+        if (!visited[row][col]) {
+          const clusterPositions = floodFill(row, col, currentGrid[row][col].type);
+          
+          // Only consider clusters of 3 or more pieces as matches
+          if (clusterPositions.length >= 3) {
+            const pattern = determinePattern(clusterPositions);
+            
+            matchClusters.push({
+              id: clusterId,
+              positions: clusterPositions,
+              type: currentGrid[row][col].type,
+              size: clusterPositions.length,
+              pattern
+            });
+            
+            // Add each position to allMatches
+            clusterPositions.forEach(pos => {
+              allMatches.push({
+                row: pos.row,
+                col: pos.col,
+                type: currentGrid[row][col].type,
+                matchType: pattern,
+                clusterId
               });
-            }
+            });
+            
+            clusterId++;
           }
-          currentMatchLength = 1;
-          currentType = currentGrid[row][col].type;
-        }
-      }
-      // Check end of row
-      if (currentMatchLength >= 3) {
-        const key = `${row}-${GRID_SIZE - currentMatchLength}`;
-        horizontalMatches[key] = { row, col: GRID_SIZE - currentMatchLength, length: currentMatchLength };
-        for (let i = 0; i < currentMatchLength; i++) {
-          matches.push({ 
-            row, 
-            col: GRID_SIZE - currentMatchLength + i, 
-            type: currentType,
-            matchType: 'horizontal'
-          });
         }
       }
     }
-    
-    // Find vertical matches
-    for (let col = 0; col < GRID_SIZE; col++) {
-      let currentMatchLength = 1;
-      let currentType = currentGrid[0][col].type;
-      
-      for (let row = 1; row < GRID_SIZE; row++) {
-        if (currentGrid[row][col].type === currentType) {
-          currentMatchLength++;
-        } else {
-          if (currentMatchLength >= 3) {
-            const key = `${row - currentMatchLength}-${col}`;
-            verticalMatches[key] = { row: row - currentMatchLength, col, length: currentMatchLength };
-            for (let i = 0; i < currentMatchLength; i++) {
-              matches.push({ 
-                row: row - currentMatchLength + i, 
-                col, 
-                type: currentType,
-                matchType: 'vertical'
-              });
-            }
-          }
-          currentMatchLength = 1;
-          currentType = currentGrid[row][col].type;
-        }
-      }
-      // Check end of column
-      if (currentMatchLength >= 3) {
-        const key = `${GRID_SIZE - currentMatchLength}-${col}`;
-        verticalMatches[key] = { row: GRID_SIZE - currentMatchLength, col, length: currentMatchLength };
-        for (let i = 0; i < currentMatchLength; i++) {
-          matches.push({ 
-            row: GRID_SIZE - currentMatchLength + i, 
-            col, 
-            type: currentType,
-            matchType: 'vertical'
-          });
-        }
-      }
+
+    // Debug logging
+    if (allMatches.length > 0) {
+      console.log('🎯 Matches found:', {
+        totalMatches: allMatches.length,
+        clusters: matchClusters.map(c => ({
+          id: c.id,
+          type: c.type,
+          size: c.size,
+          pattern: c.pattern,
+          positions: c.positions
+        }))
+      });
     }
     
-    return {
-      matches: matches.filter((match, index, self) => 
-        self.findIndex(m => m.row === match.row && m.col === match.col) === index
-      ),
-      horizontalMatches,
-      verticalMatches
+    return { 
+      matches: allMatches, 
+      clusters: matchClusters,
+      // Legacy compatibility
+      horizontalMatches: {},
+      verticalMatches: {}
     };
   }, []);
 
-  const removeMatches = useCallback((currentGrid: GamePiece[][], matchResult: { matches: { row: number; col: number; type: string; matchType: string }[], horizontalMatches: any, verticalMatches: any }) => {
+  const removeMatches = useCallback((currentGrid: GamePiece[][], matchResult: { matches: { row: number; col: number; type: string; matchType: string }[], clusters?: any[], horizontalMatches: any, verticalMatches: any }) => {
     const newGrid = currentGrid.map(row => [...row]);
     const specialPieces: { row: number, col: number, special: 'bomb' | 'striped' | 'wrapped' }[] = [];
     
-    // Create special pieces for matches of 4+
-    Object.values(matchResult.horizontalMatches).forEach((match: any) => {
-      if (match.length >= 4) {
-        const centerCol = Math.floor(match.col + match.length / 2);
-        specialPieces.push({ 
-          row: match.row, 
-          col: centerCol, 
-          special: match.length >= 5 ? 'bomb' : 'striped' 
-        });
-      }
-    });
-    
-    Object.values(matchResult.verticalMatches).forEach((match: any) => {
-      if (match.length >= 4) {
-        const centerRow = Math.floor(match.row + match.length / 2);
-        specialPieces.push({ 
-          row: centerRow, 
-          col: match.col, 
-          special: match.length >= 5 ? 'bomb' : 'striped' 
-        });
-      }
-    });
+    // Create special pieces for clusters of 4+ pieces
+    if (matchResult.clusters) {
+      matchResult.clusters.forEach((cluster: any) => {
+        if (cluster.size >= 4) {
+          // Find center position of the cluster
+          const avgRow = Math.round(cluster.positions.reduce((sum: number, pos: any) => sum + pos.row, 0) / cluster.positions.length);
+          const avgCol = Math.round(cluster.positions.reduce((sum: number, pos: any) => sum + pos.col, 0) / cluster.positions.length);
+          
+          // Determine special piece type based on cluster size and pattern  
+          let specialType: 'bomb' | 'striped' | 'wrapped' = 'striped';
+          
+          if (cluster.size >= 5) {
+            specialType = 'bomb';
+          } else if (cluster.pattern === 'L' || cluster.pattern === 'T') {
+            specialType = 'wrapped';
+          } else {
+            specialType = 'striped';
+          }
+          
+          // Find the best position for the special piece (prefer center of cluster)
+          let bestPos = cluster.positions[0];
+          let minDistance = Infinity;
+          
+          cluster.positions.forEach((pos: any) => {
+            const distance = Math.abs(pos.row - avgRow) + Math.abs(pos.col - avgCol);
+            if (distance < minDistance) {
+              minDistance = distance;
+              bestPos = pos;
+            }
+          });
+          
+          specialPieces.push({ 
+            row: bestPos.row, 
+            col: bestPos.col, 
+            special: specialType 
+          });
+          
+          console.log(`🎆 Creating ${specialType} at (${bestPos.row}, ${bestPos.col}) for ${cluster.size}-piece ${cluster.pattern} match`);
+        }
+      });
+    }
     
     // Remove matched pieces
     matchResult.matches.forEach(({ row, col }) => {
