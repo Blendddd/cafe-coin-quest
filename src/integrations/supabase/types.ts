@@ -14,13 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_sessions: {
+        Row: {
+          coins_earned: number
+          completed_at: string
+          duration_seconds: number | null
+          game_type: string
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          coins_earned?: number
+          completed_at?: string
+          duration_seconds?: number | null
+          game_type: string
+          id?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          coins_earned?: number
+          completed_at?: string
+          duration_seconds?: number | null
+          game_type?: string
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "game_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_users: {
+        Row: {
+          auth_id: string | null
+          coin_balance: number
+          coins_earned_today: number
+          created_at: string
+          daily_coin_limit: number
+          display_name: string | null
+          email: string | null
+          id: string
+          last_daily_reset: string
+          last_game_played: string | null
+          phone: string | null
+          total_coins_earned: number
+          updated_at: string
+        }
+        Insert: {
+          auth_id?: string | null
+          coin_balance?: number
+          coins_earned_today?: number
+          created_at?: string
+          daily_coin_limit?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_daily_reset?: string
+          last_game_played?: string | null
+          phone?: string | null
+          total_coins_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_id?: string | null
+          coin_balance?: number
+          coins_earned_today?: number
+          created_at?: string
+          daily_coin_limit?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_daily_reset?: string
+          last_game_played?: string | null
+          phone?: string | null
+          total_coins_earned?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      redemptions: {
+        Row: {
+          coins_spent: number
+          created_at: string
+          expires_at: string
+          id: string
+          item_name: string
+          item_price: number
+          redeemed_at: string | null
+          redemption_code: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          coins_spent: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          item_name: string
+          item_price: number
+          redeemed_at?: string | null
+          redemption_code: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          coins_spent?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          item_name?: string
+          item_price?: number
+          redeemed_at?: string | null
+          redemption_code?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "game_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_coins: {
+        Args: {
+          p_duration_seconds?: number
+          p_game_type: string
+          p_score: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      create_redemption: {
+        Args: {
+          p_coins_required: number
+          p_item_name: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
