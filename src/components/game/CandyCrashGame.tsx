@@ -29,8 +29,10 @@ interface GameStats {
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'] as const;
 const GRID_SIZE = 8;
-const INITIAL_MOVES = 30;
-const MAX_CASCADES = 6;
+const INITIAL_MOVES = 25; // Reduced from 30
+const MAX_CASCADES = 3; // Reduced from 6
+const MIN_COLORS = 4; // Start with fewer colors
+const MAX_COLORS = 6; // Max colors for higher levels
 
 export const CandyCrashGame = () => {
   const [grid, setGrid] = useState<GamePiece[][]>([]);
@@ -38,7 +40,7 @@ export const CandyCrashGame = () => {
     score: 0,
     moves: INITIAL_MOVES,
     level: 1,
-    targetScore: 1000,
+    targetScore: 1500, // Increased target score
   });
   const [selectedPiece, setSelectedPiece] = useState<{ row: number; col: number } | null>(null);
   const [gameActive, setGameActive] = useState(false);
@@ -51,24 +53,106 @@ export const CandyCrashGame = () => {
   const [cascadeCount, setCascadeCount] = useState(0);
   const [cascadeMultiplier, setCascadeMultiplier] = useState(1);
 
-  const generateRandomPiece = (row: number, col: number): GamePiece => ({
-    id: `${row}-${col}-${Date.now()}`,
-    type: COLORS[Math.floor(Math.random() * COLORS.length)],
-    row,
-    col,
-  });
+  // Get available colors based on level (difficulty scaling)
+  const getAvailableColors = useCallback((level: number) => {
+    const colorCount = Math.min(MIN_COLORS + Math.floor((level - 1) / 2), MAX_COLORS);
+    return COLORS.slice(0, colorCount);
+  }, []);
+
+  // Smart piece generation that avoids immediate matches
+  const generateSafePiece = useCallback((row: number, col: number, currentGrid?: GamePiece[][]): GamePiece => {
+    const availableColors = getAvailableColors(gameStats.level);
+    const usedGrid = currentGrid || grid;
+    
+    // If no grid exists yet, generate random piece
+    if (!usedGrid || usedGrid.length === 0) {
+      return {
+        id: `${row}-${col}-${Date.now()}-${Math.random()}`,
+        type: availableColors[Math.floor(Math.random() * availableColors.length)],
+        row,
+        col,
+      };
+    }
+
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    while (attempts < maxAttempts) {
+      const type = availableColors[Math.floor(Math.random() * availableColors.length)];
+      
+      // Check if this would create immediate horizontal match
+      let horizontalMatch = 0;
+      // Check left
+      if (col > 0 && usedGrid[row]?.[col - 1]?.type === type) {
+        horizontalMatch++;
+        if (col > 1 && usedGrid[row]?.[col - 2]?.type === type) {
+          horizontalMatch++;
+        }
+      }
+      // Check right  
+      if (col < GRID_SIZE - 1 && usedGrid[row]?.[col + 1]?.type === type) {
+        horizontalMatch++;
+        if (col < GRID_SIZE - 2 && usedGrid[row]?.[col + 2]?.type === type) {
+          horizontalMatch++;
+        }
+      }
+      
+      // Check if this would create immediate vertical match
+      let verticalMatch = 0;
+      // Check above
+      if (row > 0 && usedGrid[row - 1]?.[col]?.type === type) {
+        verticalMatch++;
+        if (row > 1 && usedGrid[row - 2]?.[col]?.type === type) {
+          verticalMatch++;
+        }
+      }
+      // Check below
+      if (row < GRID_SIZE - 1 && usedGrid[row + 1]?.[col]?.type === type) {
+        verticalMatch++;
+        if (row < GRID_SIZE - 2 && usedGrid[row + 2]?.[col]?.type === type) {
+          verticalMatch++;
+        }
+      }
+      
+      // If no immediate 3+ match, use this piece
+      if (horizontalMatch < 2 && verticalMatch < 2) {
+        return {
+          id: `${row}-${col}-${Date.now()}-${Math.random()}`,
+          type,
+          row,
+          col,
+        };
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback: return a random piece if we can't find a safe one
+    return {
+      id: `${row}-${col}-${Date.now()}-${Math.random()}`,
+      type: availableColors[Math.floor(Math.random() * availableColors.length)],
+      row,
+      col,
+    };
+  }, [gameStats.level, getAvailableColors, grid]);
+
+  const generateRandomPiece = (row: number, col: number): GamePiece => 
+    generateSafePiece(row, col);
 
   const initializeGrid = useCallback(() => {
     const newGrid: GamePiece[][] = [];
+    // Build grid row by row to avoid initial matches
     for (let row = 0; row < GRID_SIZE; row++) {
       const gridRow: GamePiece[] = [];
       for (let col = 0; col < GRID_SIZE; col++) {
-        gridRow.push(generateRandomPiece(row, col));
+        // Pass the current grid state to generateSafePiece
+        const piece = generateSafePiece(row, col, newGrid);
+        gridRow.push(piece);
       }
       newGrid.push(gridRow);
     }
     setGrid(newGrid);
-  }, []);
+  }, [generateSafePiece]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
     const matches: { row: number; col: number; type: string; matchType: 'horizontal' | 'vertical' | 'L' | 'T' }[] = [];
@@ -210,22 +294,22 @@ export const CandyCrashGame = () => {
         if (newGrid[row][col].id !== 'removed') {
           if (writeIndex !== row) {
             newGrid[writeIndex][col] = { ...newGrid[row][col], row: writeIndex, isAnimating: true };
-            newGrid[row][col] = { ...generateRandomPiece(row, col), id: 'removed' };
+            newGrid[row][col] = { ...generateSafePiece(row, col, newGrid), id: 'removed' };
             hasDropped = true;
           }
           writeIndex--;
         }
       }
       
-      // Fill empty spaces at the top
+      // Fill empty spaces at the top with safe pieces
       for (let row = writeIndex; row >= 0; row--) {
-        newGrid[row][col] = { ...generateRandomPiece(row, col), isAnimating: true };
+        newGrid[row][col] = { ...generateSafePiece(row, col, newGrid), isAnimating: true };
         hasDropped = true;
       }
     }
     
     return { newGrid, hasDropped };
-  }, []);
+  }, [generateSafePiece]);
 
   const processMatches = useCallback(async (currentCascade = 0) => {
     if (isProcessing && currentCascade === 0) return false;
@@ -254,15 +338,15 @@ export const CandyCrashGame = () => {
     const newCascadeCount = currentCascade + 1;
     setCascadeCount(newCascadeCount);
     
-    // Diminishing returns: each cascade level gives less points
-    const cascadeMultiplier = Math.max(1, 1.5 - (currentCascade * 0.15));
+    // Much more aggressive diminishing returns to prevent easy cascades
+    const cascadeMultiplier = Math.max(0.3, 1 - (currentCascade * 0.3));
     setCascadeMultiplier(cascadeMultiplier);
     
     const { newGrid, specialPieces } = removeMatches(grid, matchResult);
     
-    // Add special pieces to the grid
+    // Add special pieces to the grid (only for 5+ matches to make them rarer)
     specialPieces.forEach(({ row, col, special }) => {
-      if (newGrid[row][col].id !== 'removed') {
+      if (newGrid[row][col].id !== 'removed' && matchResult.matches.length >= 5) {
         newGrid[row][col] = { ...newGrid[row][col], special };
       }
     });
@@ -271,8 +355,8 @@ export const CandyCrashGame = () => {
     
     setGrid(droppedGrid);
     
-    // Calculate score with cascade multiplier
-    const baseScore = matchResult.matches.length * 10;
+    // Calculate score with much lower base scoring
+    const baseScore = matchResult.matches.length * (5 + gameStats.level); // Level-based scoring
     const cascadeBonus = Math.floor(baseScore * cascadeMultiplier);
     
     setGameStats(prev => ({
@@ -296,15 +380,24 @@ export const CandyCrashGame = () => {
       ));
     }, 400);
     
-    // Chain reaction with longer delay and cascade limit
+    // Much longer delay and stricter cascade limit
     setTimeout(async () => {
+      // Add randomness to prevent guaranteed cascades
+      const cascadeChance = Math.max(0.3, 0.8 - (currentCascade * 0.2));
+      if (Math.random() > cascadeChance) {
+        setIsProcessing(false);
+        setCascadeCount(0);
+        setCascadeMultiplier(1);
+        return;
+      }
+      
       const hasNewMatches = await processMatches(newCascadeCount);
       if (!hasNewMatches) {
         setIsProcessing(false);
         setCascadeCount(0);
         setCascadeMultiplier(1);
       }
-    }, 800);
+    }, 1200); // Longer delay
     
     return true;
   }, [grid, findMatches, removeMatches, dropPieces, isProcessing, toast]);
@@ -363,8 +456,10 @@ export const CandyCrashGame = () => {
       score: 0,
       moves: INITIAL_MOVES,
       level: 1,
-      targetScore: 1000,
+      targetScore: 1500, // Higher target score
     });
+    setCascadeCount(0);
+    setCascadeMultiplier(1);
     initializeGrid();
   };
 
@@ -390,18 +485,22 @@ export const CandyCrashGame = () => {
 
   useEffect(() => {
     if (gameActive && gameStats.score >= gameStats.targetScore) {
+      const newLevel = gameStats.level + 1;
+      const availableColors = getAvailableColors(newLevel);
+      
       setGameStats(prev => ({
         ...prev,
-        level: prev.level + 1,
-        targetScore: prev.targetScore * 1.5,
-        moves: prev.moves + 10,
+        level: newLevel,
+        targetScore: Math.floor(prev.targetScore * 1.8), // Higher difficulty progression
+        moves: prev.moves + Math.max(5, 15 - newLevel), // Fewer bonus moves as level increases
       }));
       toast({
         title: "Level Up!",
-        description: `Welcome to level ${gameStats.level + 1}!`,
+        description: `Level ${newLevel}! Now using ${availableColors.length} colors`,
+        duration: 3000,
       });
     }
-  }, [gameStats.score, gameStats.targetScore, gameActive]);
+  }, [gameStats.score, gameStats.targetScore, gameActive, getAvailableColors]);
 
   const getPieceImage = (type: GamePiece['type']) => {
     const imageMap = {
