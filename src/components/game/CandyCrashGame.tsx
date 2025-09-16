@@ -30,6 +30,7 @@ interface GameStats {
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'] as const;
 const GRID_SIZE = 8;
 const INITIAL_MOVES = 30;
+const MAX_CASCADES = 6;
 
 export const CandyCrashGame = () => {
   const [grid, setGrid] = useState<GamePiece[][]>([]);
@@ -47,6 +48,8 @@ export const CandyCrashGame = () => {
   const gameRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [animatingPieces, setAnimatingPieces] = useState<Set<string>>(new Set());
+  const [cascadeCount, setCascadeCount] = useState(0);
+  const [cascadeMultiplier, setCascadeMultiplier] = useState(1);
 
   const generateRandomPiece = (row: number, col: number): GamePiece => ({
     id: `${row}-${col}-${Date.now()}`,
@@ -224,15 +227,36 @@ export const CandyCrashGame = () => {
     return { newGrid, hasDropped };
   }, []);
 
-  const processMatches = useCallback(async () => {
-    if (isProcessing) return false;
-    setIsProcessing(true);
+  const processMatches = useCallback(async (currentCascade = 0) => {
+    if (isProcessing && currentCascade === 0) return false;
+    if (currentCascade >= MAX_CASCADES) {
+      setIsProcessing(false);
+      setCascadeCount(0);
+      setCascadeMultiplier(1);
+      return false;
+    }
+    
+    if (currentCascade === 0) {
+      setIsProcessing(true);
+      setCascadeCount(0);
+      setCascadeMultiplier(1);
+    }
     
     const matchResult = findMatches(grid);
     if (matchResult.matches.length === 0) {
       setIsProcessing(false);
+      setCascadeCount(0);
+      setCascadeMultiplier(1);
       return false;
     }
+    
+    // Update cascade counter and multiplier
+    const newCascadeCount = currentCascade + 1;
+    setCascadeCount(newCascadeCount);
+    
+    // Diminishing returns: each cascade level gives less points
+    const cascadeMultiplier = Math.max(1, 1.5 - (currentCascade * 0.15));
+    setCascadeMultiplier(cascadeMultiplier);
     
     const { newGrid, specialPieces } = removeMatches(grid, matchResult);
     
@@ -246,28 +270,44 @@ export const CandyCrashGame = () => {
     const { newGrid: droppedGrid, hasDropped } = dropPieces(newGrid);
     
     setGrid(droppedGrid);
+    
+    // Calculate score with cascade multiplier
+    const baseScore = matchResult.matches.length * 10;
+    const cascadeBonus = Math.floor(baseScore * cascadeMultiplier);
+    
     setGameStats(prev => ({
       ...prev,
-      score: prev.score + matchResult.matches.length * 10,
+      score: prev.score + cascadeBonus,
     }));
+    
+    // Show cascade feedback
+    if (newCascadeCount > 1) {
+      toast({
+        title: `${newCascadeCount}x Cascade!`,
+        description: `+${cascadeBonus} points`,
+        duration: 1500,
+      });
+    }
     
     // Clear animations after a delay
     setTimeout(() => {
       setGrid(currentGrid => currentGrid.map(row => 
         row.map(piece => ({ ...piece, isAnimating: false }))
       ));
-    }, 300);
+    }, 400);
     
-    // Chain reaction - check for new matches after pieces settle
+    // Chain reaction with longer delay and cascade limit
     setTimeout(async () => {
-      const hasNewMatches = await processMatches();
+      const hasNewMatches = await processMatches(newCascadeCount);
       if (!hasNewMatches) {
         setIsProcessing(false);
+        setCascadeCount(0);
+        setCascadeMultiplier(1);
       }
-    }, 600);
+    }, 800);
     
     return true;
-  }, [grid, findMatches, removeMatches, dropPieces, isProcessing]);
+  }, [grid, findMatches, removeMatches, dropPieces, isProcessing, toast]);
 
   const swapPieces = useCallback((row1: number, col1: number, row2: number, col2: number) => {
     const newGrid = grid.map(row => [...row]);
@@ -399,7 +439,7 @@ export const CandyCrashGame = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-5 gap-4 text-center">
               <div>
                 <p className="text-sm text-muted-foreground">Score</p>
                 <p className="font-bold">{gameStats.score}</p>
@@ -416,6 +456,12 @@ export const CandyCrashGame = () => {
                 <p className="text-sm text-muted-foreground">Target</p>
                 <p className="font-bold">{gameStats.targetScore}</p>
               </div>
+              {cascadeCount > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Cascade</p>
+                  <p className="font-bold text-primary">{cascadeCount}x</p>
+                </div>
+              )}
             </div>
             
             <div 
