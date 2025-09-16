@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGameUser } from '@/hooks/useGameUser';
 import { useToast } from '@/hooks/use-toast';
+import candyRed from '@/assets/candy-red.png';
+import candyBlue from '@/assets/candy-blue.png';
+import candyGreen from '@/assets/candy-green.png';
+import candyYellow from '@/assets/candy-yellow.png';
+import candyPurple from '@/assets/candy-purple.png';
+import candyOrange from '@/assets/candy-orange.png';
 
 interface GamePiece {
   id: string;
@@ -232,16 +238,16 @@ export const CandyCrashGame = () => {
     }
   }, [gameStats.score, gameStats.targetScore, gameActive]);
 
-  const getPieceColor = (type: GamePiece['type']) => {
-    const colorMap = {
-      red: 'bg-red-500',
-      blue: 'bg-blue-500',
-      green: 'bg-green-500',
-      yellow: 'bg-yellow-500',
-      purple: 'bg-purple-500',
-      orange: 'bg-orange-500',
+  const getPieceImage = (type: GamePiece['type']) => {
+    const imageMap = {
+      red: candyRed,
+      blue: candyBlue,
+      green: candyGreen,
+      yellow: candyYellow,
+      purple: candyPurple,
+      orange: candyOrange,
     };
-    return colorMap[type];
+    return imageMap[type];
   };
 
   return (
@@ -298,15 +304,20 @@ export const CandyCrashGame = () => {
                     key={piece.id}
                     onClick={() => handlePieceClick(rowIndex, colIndex)}
                     className={`
-                      aspect-square rounded-md transition-all duration-200 hover:scale-105
-                      ${getPieceColor(piece.type)}
+                      aspect-square rounded-md transition-all duration-200 hover:scale-105 bg-white
                       ${
                         selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
-                          ? 'ring-2 ring-white scale-110'
+                          ? 'ring-2 ring-primary scale-110'
                           : ''
                       }
                     `}
-                  />
+                  >
+                    <img
+                      src={getPieceImage(piece.type)}
+                      alt={`${piece.type} candy`}
+                      className="w-full h-full object-contain rounded-md"
+                    />
+                  </button>
                 ))
               )}
             </div>
