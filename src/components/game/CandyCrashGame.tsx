@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGameUser } from '@/hooks/useGameUser';
 import { useToast } from '@/hooks/use-toast';
-import candyRed from '@/assets/candy-red.png';
-import candyBlue from '@/assets/candy-blue.png';
-import candyGreen from '@/assets/candy-green.png';
-import candyYellow from '@/assets/candy-yellow.png';
-import candyPurple from '@/assets/candy-purple.png';
-import candyOrange from '@/assets/candy-orange.png';
+import foodPizza from '@/assets/food-pizza.png';
+import foodWing from '@/assets/food-wing.png';
+import foodPepperoni from '@/assets/food-pepperoni.png';
+import foodCheese from '@/assets/food-cheese.png';
+import foodMushroom from '@/assets/food-mushroom.png';
+import foodPepper from '@/assets/food-pepper.png';
 
 interface GamePiece {
   id: string;
-  type: 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
+  type: 'pizza' | 'wing' | 'pepperoni' | 'cheese' | 'mushroom' | 'pepper';
   row: number;
   col: number;
   special?: 'bomb' | 'striped' | 'wrapped';
@@ -27,7 +27,7 @@ interface GameStats {
   targetScore: number;
 }
 
-const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'] as const;
+const COLORS = ['pizza', 'wing', 'pepperoni', 'cheese', 'mushroom', 'pepper'] as const;
 const GRID_SIZE = 8;
 const INITIAL_MOVES = 25; // Reduced from 30
 const MAX_CASCADES = 3; // Reduced from 6
@@ -277,7 +277,7 @@ export const CandyCrashGame = () => {
     
     // Remove matched pieces
     matchResult.matches.forEach(({ row, col }) => {
-      newGrid[row][col] = { ...newGrid[row][col], type: 'red' as any, id: 'removed' };
+      newGrid[row][col] = { ...newGrid[row][col], type: 'pizza' as any, id: 'removed' };
     });
     
     return { newGrid, specialPieces };
@@ -344,9 +344,9 @@ export const CandyCrashGame = () => {
     
     const { newGrid, specialPieces } = removeMatches(grid, matchResult);
     
-    // Add special pieces to the grid (only for 5+ matches to make them rarer)
+    // Add special pieces to the grid (for 4+ matches)
     specialPieces.forEach(({ row, col, special }) => {
-      if (newGrid[row][col].id !== 'removed' && matchResult.matches.length >= 5) {
+      if (newGrid[row][col].id !== 'removed') {
         newGrid[row][col] = { ...newGrid[row][col], special };
       }
     });
@@ -492,7 +492,6 @@ export const CandyCrashGame = () => {
         ...prev,
         level: newLevel,
         targetScore: Math.floor(prev.targetScore * 1.8), // Higher difficulty progression
-        moves: prev.moves + Math.max(5, 15 - newLevel), // Fewer bonus moves as level increases
       }));
       toast({
         title: "Level Up!",
@@ -504,12 +503,12 @@ export const CandyCrashGame = () => {
 
   const getPieceImage = (type: GamePiece['type']) => {
     const imageMap = {
-      red: candyRed,
-      blue: candyBlue,
-      green: candyGreen,
-      yellow: candyYellow,
-      purple: candyPurple,
-      orange: candyOrange,
+      pizza: foodPizza,
+      wing: foodWing,
+      pepperoni: foodPepperoni,
+      cheese: foodCheese,
+      mushroom: foodMushroom,
+      pepper: foodPepper,
     };
     return imageMap[type];
   };
@@ -518,7 +517,7 @@ export const CandyCrashGame = () => {
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>🍬 Candy Crash</span>
+          <span>🍕 Lanova Food Match</span>
           {gameUser && (
             <Badge variant="secondary">
               🪙 {gameUser.coin_balance} coins
@@ -530,7 +529,7 @@ export const CandyCrashGame = () => {
         {!gameActive ? (
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Match 3 or more candies to earn points and coins! Create special pieces by matching 4+ candies in a row. Watch for chain reactions as pieces cascade down!
+              Match 3 or more food items to earn points and coins! Create special pieces by matching 4+ items in a row. Watch for chain reactions as pieces cascade down!
             </p>
             <Button onClick={startGame} size="lg" className="w-full">
               🎮 Start Game
@@ -587,7 +586,7 @@ export const CandyCrashGame = () => {
                   >
                     <img
                       src={getPieceImage(piece.type)}
-                      alt={`${piece.type} candy`}
+                      alt={`${piece.type} food`}
                       className={`w-full h-full object-contain rounded-md transition-transform duration-300 ${
                         piece.isAnimating ? 'scale-90' : 'scale-100'
                       }`}
