@@ -52,6 +52,7 @@ export const CandyCrashGame = () => {
   const [animatingPieces, setAnimatingPieces] = useState<Set<string>>(new Set());
   const [cascadeCount, setCascadeCount] = useState(0);
   const [cascadeMultiplier, setCascadeMultiplier] = useState(1);
+  const [autoProcessTimeout, setAutoProcessTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Get available colors based on level (difficulty scaling)
   const getAvailableColors = useCallback((level: number) => {
@@ -147,6 +148,7 @@ export const CandyCrashGame = () => {
       
       // Validate the grid has no initial matches
       if (validateGridForMatches(newGrid)) {
+        console.log('✅ Generated match-free grid on attempt', attempts + 1);
         setGrid(newGrid);
         return;
       }
@@ -155,8 +157,8 @@ export const CandyCrashGame = () => {
       console.log(`Grid attempt ${attempts} had matches, regenerating...`);
     }
     
-    // Fallback: set grid even if it has matches (better than infinite loop)
-    console.warn('Could not generate match-free grid after 10 attempts');
+    // Fallback: set grid even if it has matches (will be auto-processed)
+    console.warn('⚠️ Could not generate match-free grid after 10 attempts, using grid with matches');
     const fallbackGrid: GamePiece[][] = [];
     for (let row = 0; row < GRID_SIZE; row++) {
       const gridRow: GamePiece[] = [];
@@ -167,6 +169,15 @@ export const CandyCrashGame = () => {
       fallbackGrid.push(gridRow);
     }
     setGrid(fallbackGrid);
+    
+    // Log the matches that will be auto-processed
+    const initialMatches = findMatches(fallbackGrid);
+    if (initialMatches.matches.length > 0) {
+      console.log('🎯 Initial grid has matches that will be auto-processed:', {
+        matchCount: initialMatches.matches.length,
+        clusters: initialMatches.clusters?.length || 0
+      });
+    }
   }, [generateSafePiece]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
@@ -489,6 +500,34 @@ export const CandyCrashGame = () => {
     return true;
   }, [grid, findMatches, removeMatches, dropPieces, isProcessing, toast]);
 
+  // Auto-detect and process matches whenever grid changes
+  useEffect(() => {
+    if (!gameActive || isProcessing) return;
+    
+    // Clear existing timeout
+    if (autoProcessTimeout) {
+      clearTimeout(autoProcessTimeout);
+    }
+    
+    // Debounce match detection to avoid infinite loops
+    const timeout = setTimeout(() => {
+      const matchResult = findMatches(grid);
+      if (matchResult.matches.length > 0) {
+        console.log('🔍 Auto-detected matches, processing...', {
+          matchCount: matchResult.matches.length,
+          clusters: matchResult.clusters?.length || 0
+        });
+        processMatches(0);
+      }
+    }, 300); // 300ms debounce
+    
+    setAutoProcessTimeout(timeout);
+    
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [grid, gameActive, isProcessing, findMatches, processMatches, autoProcessTimeout]);
+
   const swapPieces = useCallback((row1: number, col1: number, row2: number, col2: number) => {
     const newGrid = grid.map(row => [...row]);
     const temp = newGrid[row1][col1];
@@ -537,6 +576,7 @@ export const CandyCrashGame = () => {
   }, [gameActive, selectedPiece, isValidMove, swapPieces, findMatches, processMatches, toast]);
 
   const startGame = () => {
+    console.log('🎮 Starting new game...');
     setGameActive(true);
     setGameStartTime(Date.now());
     setGameStats({
@@ -547,6 +587,11 @@ export const CandyCrashGame = () => {
     });
     setCascadeCount(0);
     setCascadeMultiplier(1);
+    setAutoProcessTimeout(null);
+    // Clear any existing timeouts
+    if (autoProcessTimeout) {
+      clearTimeout(autoProcessTimeout);
+    }
     initializeGrid();
   };
 
