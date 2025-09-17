@@ -173,21 +173,7 @@ export type Database = {
       }
     }
     Views: {
-      redemptions_staff_view: {
-        Row: {
-          coins_spent: number | null
-          created_at: string | null
-          customer_name: string | null
-          expires_at: string | null
-          id: string | null
-          item_name: string | null
-          masked_email: string | null
-          redeemed_at: string | null
-          redemption_code: string | null
-          status: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       award_coins: {
@@ -210,6 +196,21 @@ export type Database = {
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      get_staff_redemptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          coins_spent: number
+          created_at: string
+          customer_name: string
+          expires_at: string
+          id: string
+          item_name: string
+          masked_email: string
+          redeemed_at: string
+          redemption_code: string
+          status: string
+        }[]
       }
       has_role: {
         Args: {
