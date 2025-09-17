@@ -8,10 +8,9 @@ import { AuthModal } from "./auth/AuthModal";
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  onViewMenu: () => void;
 }
 
-const Header = ({ activeTab, onTabChange, onViewMenu }: HeaderProps) => {
+const Header = ({ activeTab, onTabChange }: HeaderProps) => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { gameUser } = useGameUser();
@@ -49,12 +48,6 @@ const Header = ({ activeTab, onTabChange, onViewMenu }: HeaderProps) => {
               className={`transition-colors ${activeTab === "rewards" ? "text-primary" : "text-foreground hover:text-primary"}`}
             >
               Rewards
-            </button>
-            <button 
-              onClick={onViewMenu} 
-              className="text-foreground hover:text-primary transition-colors"
-            >
-              Menu
             </button>
           </nav>
 

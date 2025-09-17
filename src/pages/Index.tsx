@@ -15,7 +15,6 @@ const Index = () => {
       <Header 
         activeTab={activeTab} 
         onTabChange={setActiveTab} 
-        onViewMenu={() => setShowMenu(true)} 
       />
       <main>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

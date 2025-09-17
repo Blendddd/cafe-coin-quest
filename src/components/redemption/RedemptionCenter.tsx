@@ -120,15 +120,40 @@ export const RedemptionCenter = () => {
     <>
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2">🍽️ Redemption Center</h2>
+          <h2 className="text-3xl font-bold mb-2">🍽️ Rewards & Menu</h2>
           <p className="text-muted-foreground">
-            Trade your hard-earned coins for delicious La Nova dishes!
+            Browse our menu and redeem your coins for delicious La Nova dishes!
           </p>
           {gameUser && (
             <Badge variant="secondary" className="mt-2">
               💰 {gameUser.coin_balance} coins available
             </Badge>
           )}
+        </div>
+
+        {/* Menu Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">🍽️ La Nova Cafe Menu</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-hidden rounded-lg">
+              <iframe
+                src="https://lanova-restcafe.com/index-kurdish.html"
+                className="w-full h-[600px] border-0"
+                title="La Nova Cafe Menu"
+                loading="lazy"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Redemption Center Section */}
+        <div className="text-center pt-6">
+          <h3 className="text-2xl font-bold mb-2">🪙 Coin Redemption</h3>
+          <p className="text-muted-foreground">
+            Trade your hard-earned coins for these special rewards!
+          </p>
         </div>
 
         {/* Category Filter */}
