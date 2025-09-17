@@ -5,7 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useGameUser } from "@/hooks/useGameUser";
 import { AuthModal } from "./auth/AuthModal";
 
-const Header = () => {
+interface HeaderProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  onViewMenu: () => void;
+}
+
+const Header = ({ activeTab, onTabChange, onViewMenu }: HeaderProps) => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { gameUser } = useGameUser();
@@ -26,10 +32,30 @@ const Header = () => {
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#home" className="text-foreground hover:text-primary transition-colors">Home</a>
-            <a href="#games" className="text-foreground hover:text-primary transition-colors">Games</a>
-            <a href="#rewards" className="text-foreground hover:text-primary transition-colors">Rewards</a>
-            <a href="#menu" className="text-foreground hover:text-primary transition-colors">Menu</a>
+            <button 
+              onClick={() => onTabChange("hero")} 
+              className={`transition-colors ${activeTab === "hero" ? "text-primary" : "text-foreground hover:text-primary"}`}
+            >
+              Home
+            </button>
+            <button 
+              onClick={() => onTabChange("games")} 
+              className={`transition-colors ${activeTab === "games" ? "text-primary" : "text-foreground hover:text-primary"}`}
+            >
+              Games
+            </button>
+            <button 
+              onClick={() => onTabChange("rewards")} 
+              className={`transition-colors ${activeTab === "rewards" ? "text-primary" : "text-foreground hover:text-primary"}`}
+            >
+              Rewards
+            </button>
+            <button 
+              onClick={onViewMenu} 
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              Menu
+            </button>
           </nav>
 
           <div className="flex items-center space-x-4">

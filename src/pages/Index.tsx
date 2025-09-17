@@ -12,7 +12,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        onViewMenu={() => setShowMenu(true)} 
+      />
       <main>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="container mx-auto px-4">
