@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("hero");
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,7 +24,12 @@ const Index = () => {
           </div>
           
           <TabsContent value="hero" className="mt-0">
-            <Hero />
+            <Hero 
+              onStartPlaying={() => setActiveTab("games")} 
+              onViewMenu={() => setShowMenu(true)}
+              showMenu={showMenu}
+              onCloseMenu={() => setShowMenu(false)}
+            />
           </TabsContent>
           
           <TabsContent value="games" className="mt-6">

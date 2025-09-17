@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import MenuModal from "./MenuModal";
 
-const Hero = () => {
+interface HeroProps {
+  onStartPlaying: () => void;
+  onViewMenu: () => void;
+  showMenu: boolean;
+  onCloseMenu: () => void;
+}
+
+const Hero = ({ onStartPlaying, onViewMenu, showMenu, onCloseMenu }: HeroProps) => {
   return (
     <section id="home" className="py-20 bg-gradient-to-br from-background to-secondary">
       <div className="container mx-auto px-4 text-center">
@@ -14,10 +22,10 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="text-lg px-8 py-6">
+            <Button size="lg" className="text-lg px-8 py-6" onClick={onStartPlaying}>
               🎮 Start Playing
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-6" onClick={onViewMenu}>
               🍽️ View Menu
             </Button>
           </div>
@@ -55,6 +63,8 @@ const Hero = () => {
           </div>
         </div>
       </div>
+      
+      <MenuModal open={showMenu} onClose={onCloseMenu} />
     </section>
   );
 };
