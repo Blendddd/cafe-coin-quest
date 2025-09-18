@@ -157,28 +157,29 @@ export const CandyCrashGame = () => {
       console.log(`Grid attempt ${attempts} had matches, regenerating...`);
     }
     
-    // Fallback: set grid even if it has matches (will be auto-processed)
-    console.warn('⚠️ Could not generate match-free grid after 10 attempts, using grid with matches');
+    // Fallback: create a simple safe grid without matches
+    console.warn('⚠️ Could not generate match-free grid after 10 attempts, creating simple pattern');
     const fallbackGrid: GamePiece[][] = [];
+    const availableColors = getAvailableColors(1);
+    
     for (let row = 0; row < GRID_SIZE; row++) {
       const gridRow: GamePiece[] = [];
       for (let col = 0; col < GRID_SIZE; col++) {
-        const piece = generateSafePiece(row, col, fallbackGrid);
+        // Create a checkerboard-like pattern to avoid matches
+        const colorIndex = (row + col) % availableColors.length;
+        const piece = {
+          id: `${row}-${col}-${Date.now()}-${Math.random()}`,
+          type: availableColors[colorIndex],
+          row,
+          col,
+        };
         gridRow.push(piece);
       }
       fallbackGrid.push(gridRow);
     }
     setGrid(fallbackGrid);
-    
-    // Log the matches that will be auto-processed
-    const initialMatches = findMatches(fallbackGrid);
-    if (initialMatches.matches.length > 0) {
-      console.log('🎯 Initial grid has matches that will be auto-processed:', {
-        matchCount: initialMatches.matches.length,
-        clusters: initialMatches.clusters?.length || 0
-      });
-    }
-  }, [generateSafePiece]);
+    console.log('✅ Created fallback grid with no matches');
+  }, [generateSafePiece, getAvailableColors]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
     const allMatches: { row: number; col: number; type: string; matchType: string; clusterId: number }[] = [];
@@ -404,18 +405,34 @@ export const CandyCrashGame = () => {
   const dropPieces = useCallback((currentGrid: GamePiece[][]) => {
     const newGrid = currentGrid.map(row => [...row]);
     let hasDropped = false;
+    const affectedColumns = new Set<number>();
     
-    // Process each column independently
-    for (let col = 0; col < GRID_SIZE; col++) {
-      // Collect all non-removed pieces in this column from bottom to top
-      const pieces: GamePiece[] = [];
+    console.log('🎯 Starting piece drop simulation...');
+    
+    // First pass: identify affected columns (columns with removed pieces)
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
+        if (newGrid[row][col].id === 'removed') {
+          affectedColumns.add(col);
+        }
+      }
+    }
+    
+    console.log('📍 Affected columns:', Array.from(affectedColumns));
+    
+    // Process each affected column independently
+    for (const col of affectedColumns) {
+      // Collect all non-removed pieces in this column (from bottom to top)
+      const existingPieces: GamePiece[] = [];
       for (let row = GRID_SIZE - 1; row >= 0; row--) {
         if (newGrid[row][col].id !== 'removed') {
-          pieces.push(newGrid[row][col]);
+          existingPieces.push({ ...newGrid[row][col] });
         }
       }
       
-      // Clear the entire column
+      console.log(`🔄 Column ${col}: Found ${existingPieces.length} existing pieces to drop`);
+      
+      // Clear the entire column first
       for (let row = 0; row < GRID_SIZE; row++) {
         newGrid[row][col] = { 
           id: 'removed', 
@@ -425,45 +442,52 @@ export const CandyCrashGame = () => {
         };
       }
       
-      // Place existing pieces at the bottom (gravity effect)
-      for (let i = 0; i < pieces.length; i++) {
-        const targetRow = GRID_SIZE - 1 - i;
-        const piece = pieces[i];
+      // Place existing pieces at the bottom (gravity simulation)
+      for (let i = 0; i < existingPieces.length; i++) {
+        const targetRow = GRID_SIZE - 1 - i; // Bottom up
+        const piece = existingPieces[i];
+        const originalRow = piece.row;
         
-        // Update piece position and mark as animating if it moved
         newGrid[targetRow][col] = {
           ...piece,
           row: targetRow,
           col,
-          isAnimating: piece.row !== targetRow
+          isAnimating: originalRow !== targetRow
         };
         
-        if (piece.row !== targetRow) {
+        if (originalRow !== targetRow) {
           hasDropped = true;
+          console.log(`⬇️ Piece dropped from row ${originalRow} to row ${targetRow} in column ${col}`);
         }
       }
       
-      // Generate new pieces at the top for empty spaces
-      const availableColors = getAvailableColors(gameStats.level);
-      const emptySpaces = GRID_SIZE - pieces.length;
-      
-      for (let i = 0; i < emptySpaces; i++) {
-        const row = i;
-        const randomType = availableColors[Math.floor(Math.random() * availableColors.length)];
+      // Generate new pieces ONLY at the top for empty spaces
+      const emptySpaces = GRID_SIZE - existingPieces.length;
+      if (emptySpaces > 0) {
+        console.log(`✨ Generating ${emptySpaces} new pieces for column ${col}`);
         
-        newGrid[row][col] = {
-          id: `${row}-${col}-${Date.now()}-${Math.random()}`,
-          type: randomType,
-          row,
-          col,
-          isAnimating: true
-        };
-        hasDropped = true;
+        // Build the partial grid up to this point for safe piece generation
+        const partialGrid = newGrid.map(row => [...row]);
+        
+        for (let i = 0; i < emptySpaces; i++) {
+          const row = i;
+          // Use safe piece generation to avoid immediate matches
+          const newPiece = generateSafePiece(row, col, partialGrid);
+          
+          partialGrid[row][col] = {
+            ...newPiece,
+            isAnimating: true
+          };
+          
+          newGrid[row][col] = partialGrid[row][col];
+          hasDropped = true;
+        }
       }
     }
     
+    console.log('✅ Piece drop complete. HasDropped:', hasDropped);
     return { newGrid, hasDropped };
-  }, [getAvailableColors, gameStats.level]);
+  }, [generateSafePiece]);
 
   const processMatches = useCallback(async (currentCascade = 0) => {
     if (isProcessing && currentCascade === 0) return false;
@@ -556,9 +580,16 @@ export const CandyCrashGame = () => {
     return true;
   }, [grid, findMatches, removeMatches, dropPieces, isProcessing, toast]);
 
-  // Auto-detect and process matches whenever grid changes
+  // Auto-detect and process matches only after player moves (not on grid initialization)
   useEffect(() => {
-    if (!gameActive || isProcessing) return;
+    if (!gameActive || isProcessing || !gameStartTime) return;
+    
+    // Skip auto-processing for the first 2 seconds to avoid processing initial grid
+    const timeSinceStart = Date.now() - gameStartTime;
+    if (timeSinceStart < 2000) {
+      console.log('⏳ Skipping auto-process during initial period');
+      return;
+    }
     
     // Clear existing timeout
     if (autoProcessTimeout) {
@@ -569,20 +600,20 @@ export const CandyCrashGame = () => {
     const timeout = setTimeout(() => {
       const matchResult = findMatches(grid);
       if (matchResult.matches.length > 0) {
-        console.log('🔍 Auto-detected matches, processing...', {
+        console.log('🔍 Auto-detected matches after moves, processing...', {
           matchCount: matchResult.matches.length,
           clusters: matchResult.clusters?.length || 0
         });
         processMatches(0);
       }
-    }, 300); // 300ms debounce
+    }, 500); // Longer debounce for stability
     
     setAutoProcessTimeout(timeout);
     
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [grid, gameActive, isProcessing, findMatches, processMatches, autoProcessTimeout]);
+  }, [grid, gameActive, isProcessing, findMatches, processMatches, autoProcessTimeout, gameStartTime]);
 
   const swapPieces = useCallback((row1: number, col1: number, row2: number, col2: number) => {
     const newGrid = grid.map(row => [...row]);
@@ -633,22 +664,29 @@ export const CandyCrashGame = () => {
 
   const startGame = () => {
     console.log('🎮 Starting new game...');
+    
+    // Clear any existing state first
+    setIsProcessing(false);
+    setCascadeCount(0);
+    setCascadeMultiplier(1);
+    if (autoProcessTimeout) {
+      clearTimeout(autoProcessTimeout);
+    }
+    setAutoProcessTimeout(null);
+    
+    // Set game state
     setGameActive(true);
     setGameStartTime(Date.now());
     setGameStats({
       score: 0,
       moves: INITIAL_MOVES,
       level: 1,
-      targetScore: 1500, // Higher target score
+      targetScore: 1500,
     });
-    setCascadeCount(0);
-    setCascadeMultiplier(1);
-    setAutoProcessTimeout(null);
-    // Clear any existing timeouts
-    if (autoProcessTimeout) {
-      clearTimeout(autoProcessTimeout);
-    }
+    
+    // Initialize grid - this should NOT auto-process matches
     initializeGrid();
+    console.log('✅ Game started with clean grid');
   };
 
   const endGame = async () => {
