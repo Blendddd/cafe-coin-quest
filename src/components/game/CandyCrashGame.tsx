@@ -181,126 +181,146 @@ export const CandyCrashGame = () => {
   }, [generateSafePiece]);
 
   const findMatches = useCallback((currentGrid: GamePiece[][]) => {
-    const visited: boolean[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
     const allMatches: { row: number; col: number; type: string; matchType: string; clusterId: number }[] = [];
     const matchClusters: { 
       id: number; 
       positions: { row: number; col: number }[]; 
       type: string; 
       size: number;
-      pattern: 'horizontal' | 'vertical' | 'L' | 'T' | 'cross' | 'cluster';
+      pattern: 'horizontal' | 'vertical';
     }[] = [];
     
     let clusterId = 0;
 
-    // Flood fill to find connected clusters of same-type pieces
-    const floodFill = (startRow: number, startCol: number, targetType: string): { row: number; col: number }[] => {
-      const cluster: { row: number; col: number }[] = [];
-      const stack = [{ row: startRow, col: startCol }];
-      
-      while (stack.length > 0) {
-        const { row, col } = stack.pop()!;
-        
-        // Check bounds and conditions
-        if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) continue;
-        if (visited[row][col]) continue;
-        if (currentGrid[row][col].type !== targetType) continue;
-        
-        // Mark as visited and add to cluster
-        visited[row][col] = true;
-        cluster.push({ row, col });
-        
-        // Add adjacent cells to stack (4-directional)
-        stack.push(
-          { row: row - 1, col }, // up
-          { row: row + 1, col }, // down
-          { row, col: col - 1 }, // left
-          { row, col: col + 1 }  // right
-        );
-      }
-      
-      return cluster;
-    };
-
-    // Determine pattern type of a cluster
-    const determinePattern = (positions: { row: number; col: number }[]): 'horizontal' | 'vertical' | 'L' | 'T' | 'cross' | 'cluster' => {
-      if (positions.length < 3) return 'cluster';
-      
-      const rows = [...new Set(positions.map(p => p.row))].sort((a, b) => a - b);
-      const cols = [...new Set(positions.map(p => p.col))].sort((a, b) => a - b);
-      
-      // Pure horizontal line
-      if (rows.length === 1 && cols.length >= 3) {
-        const row = rows[0];
-        const sortedCols = cols.sort((a, b) => a - b);
-        // Check if columns are consecutive
-        let consecutive = true;
-        for (let i = 1; i < sortedCols.length; i++) {
-          if (sortedCols[i] !== sortedCols[i-1] + 1) {
-            consecutive = false;
-            break;
-          }
-        }
-        return consecutive ? 'horizontal' : 'cluster';
-      }
-      
-      // Pure vertical line
-      if (cols.length === 1 && rows.length >= 3) {
-        const col = cols[0];
-        const sortedRows = rows.sort((a, b) => a - b);
-        // Check if rows are consecutive
-        let consecutive = true;
-        for (let i = 1; i < sortedRows.length; i++) {
-          if (sortedRows[i] !== sortedRows[i-1] + 1) {
-            consecutive = false;
-            break;
-          }
-        }
-        return consecutive ? 'vertical' : 'cluster';
-      }
-      
-      // Complex patterns (L, T, cross)
-      if (rows.length >= 2 && cols.length >= 2) {
-        if (positions.length >= 5) return 'cross';
-        if (positions.length === 4) return 'T';
-        return 'L';
-      }
-      
-      return 'cluster';
-    };
-
-    // Find all clusters
+    // Find horizontal matches (3+ consecutive pieces in a row)
     for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        if (!visited[row][col]) {
-          const clusterPositions = floodFill(row, col, currentGrid[row][col].type);
-          
-          // Only consider clusters of 3 or more pieces as matches
-          if (clusterPositions.length >= 3) {
-            const pattern = determinePattern(clusterPositions);
+      let count = 1;
+      let currentType = currentGrid[row][0].type;
+      let startCol = 0;
+
+      for (let col = 1; col < GRID_SIZE; col++) {
+        if (currentGrid[row][col].type === currentType) {
+          count++;
+        } else {
+          // Check if we have a match of 3 or more
+          if (count >= 3) {
+            const positions: { row: number; col: number }[] = [];
+            for (let matchCol = startCol; matchCol < startCol + count; matchCol++) {
+              positions.push({ row, col: matchCol });
+              allMatches.push({
+                row,
+                col: matchCol,
+                type: currentType,
+                matchType: 'horizontal',
+                clusterId
+              });
+            }
             
             matchClusters.push({
               id: clusterId,
-              positions: clusterPositions,
-              type: currentGrid[row][col].type,
-              size: clusterPositions.length,
-              pattern
+              positions,
+              type: currentType,
+              size: count,
+              pattern: 'horizontal'
             });
-            
-            // Add each position to allMatches
-            clusterPositions.forEach(pos => {
-              allMatches.push({
-                row: pos.row,
-                col: pos.col,
-                type: currentGrid[row][col].type,
-                matchType: pattern,
-                clusterId
-              });
-            });
-            
             clusterId++;
           }
+          
+          // Reset for next potential match
+          count = 1;
+          currentType = currentGrid[row][col].type;
+          startCol = col;
         }
+      }
+      
+      // Check the last sequence in the row
+      if (count >= 3) {
+        const positions: { row: number; col: number }[] = [];
+        for (let matchCol = startCol; matchCol < startCol + count; matchCol++) {
+          positions.push({ row, col: matchCol });
+          allMatches.push({
+            row,
+            col: matchCol,
+            type: currentType,
+            matchType: 'horizontal',
+            clusterId
+          });
+        }
+        
+        matchClusters.push({
+          id: clusterId,
+          positions,
+          type: currentType,
+          size: count,
+          pattern: 'horizontal'
+        });
+        clusterId++;
+      }
+    }
+
+    // Find vertical matches (3+ consecutive pieces in a column)
+    for (let col = 0; col < GRID_SIZE; col++) {
+      let count = 1;
+      let currentType = currentGrid[0][col].type;
+      let startRow = 0;
+
+      for (let row = 1; row < GRID_SIZE; row++) {
+        if (currentGrid[row][col].type === currentType) {
+          count++;
+        } else {
+          // Check if we have a match of 3 or more
+          if (count >= 3) {
+            const positions: { row: number; col: number }[] = [];
+            for (let matchRow = startRow; matchRow < startRow + count; matchRow++) {
+              positions.push({ row: matchRow, col });
+              allMatches.push({
+                row: matchRow,
+                col,
+                type: currentType,
+                matchType: 'vertical',
+                clusterId
+              });
+            }
+            
+            matchClusters.push({
+              id: clusterId,
+              positions,
+              type: currentType,
+              size: count,
+              pattern: 'vertical'
+            });
+            clusterId++;
+          }
+          
+          // Reset for next potential match
+          count = 1;
+          currentType = currentGrid[row][col].type;
+          startRow = row;
+        }
+      }
+      
+      // Check the last sequence in the column
+      if (count >= 3) {
+        const positions: { row: number; col: number }[] = [];
+        for (let matchRow = startRow; matchRow < startRow + count; matchRow++) {
+          positions.push({ row: matchRow, col });
+          allMatches.push({
+            row: matchRow,
+            col,
+            type: currentType,
+            matchType: 'vertical',
+            clusterId
+          });
+        }
+        
+        matchClusters.push({
+          id: clusterId,
+          positions,
+          type: currentType,
+          size: count,
+          pattern: 'vertical'
+        });
+        clusterId++;
       }
     }
 
@@ -385,29 +405,65 @@ export const CandyCrashGame = () => {
     const newGrid = currentGrid.map(row => [...row]);
     let hasDropped = false;
     
+    // Process each column independently
     for (let col = 0; col < GRID_SIZE; col++) {
-      let writeIndex = GRID_SIZE - 1;
-      
+      // Collect all non-removed pieces in this column from bottom to top
+      const pieces: GamePiece[] = [];
       for (let row = GRID_SIZE - 1; row >= 0; row--) {
         if (newGrid[row][col].id !== 'removed') {
-          if (writeIndex !== row) {
-            newGrid[writeIndex][col] = { ...newGrid[row][col], row: writeIndex, isAnimating: true };
-            newGrid[row][col] = { ...generateSafePiece(row, col, newGrid), id: 'removed' };
-            hasDropped = true;
-          }
-          writeIndex--;
+          pieces.push(newGrid[row][col]);
         }
       }
       
-      // Fill empty spaces at the top with safe pieces
-      for (let row = writeIndex; row >= 0; row--) {
-        newGrid[row][col] = { ...generateSafePiece(row, col, newGrid), isAnimating: true };
+      // Clear the entire column
+      for (let row = 0; row < GRID_SIZE; row++) {
+        newGrid[row][col] = { 
+          id: 'removed', 
+          type: 'pizza' as any, 
+          row, 
+          col 
+        };
+      }
+      
+      // Place existing pieces at the bottom (gravity effect)
+      for (let i = 0; i < pieces.length; i++) {
+        const targetRow = GRID_SIZE - 1 - i;
+        const piece = pieces[i];
+        
+        // Update piece position and mark as animating if it moved
+        newGrid[targetRow][col] = {
+          ...piece,
+          row: targetRow,
+          col,
+          isAnimating: piece.row !== targetRow
+        };
+        
+        if (piece.row !== targetRow) {
+          hasDropped = true;
+        }
+      }
+      
+      // Generate new pieces at the top for empty spaces
+      const availableColors = getAvailableColors(gameStats.level);
+      const emptySpaces = GRID_SIZE - pieces.length;
+      
+      for (let i = 0; i < emptySpaces; i++) {
+        const row = i;
+        const randomType = availableColors[Math.floor(Math.random() * availableColors.length)];
+        
+        newGrid[row][col] = {
+          id: `${row}-${col}-${Date.now()}-${Math.random()}`,
+          type: randomType,
+          row,
+          col,
+          isAnimating: true
+        };
         hasDropped = true;
       }
     }
     
     return { newGrid, hasDropped };
-  }, [generateSafePiece]);
+  }, [getAvailableColors, gameStats.level]);
 
   const processMatches = useCallback(async (currentCascade = 0) => {
     if (isProcessing && currentCascade === 0) return false;
