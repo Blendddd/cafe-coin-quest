@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CandyCrashGame } from './CandyCrashGame';
+import CandyCrushGame from './CandyCrushGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameUser } from '@/hooks/useGameUser';
 import { AuthModal } from '../auth/AuthModal';
@@ -21,7 +21,7 @@ export const GameCenter = () => {
     setSelectedGame(gameId);
   };
 
-  if (selectedGame === 'candy-crash') {
+  if (selectedGame === 'candy-crush') {
     return (
       <div className="space-y-4">
         <Button 
@@ -30,7 +30,7 @@ export const GameCenter = () => {
         >
           ← Back to Games
         </Button>
-        <CandyCrashGame />
+        <CandyCrushGame />
       </div>
     );
   }
@@ -53,10 +53,10 @@ export const GameCenter = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" 
-                onClick={() => handleGameSelect('candy-crash')}>
+                onClick={() => handleGameSelect('candy-crush')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                🍬 Candy Crash
+                🍬 Candy Crush
                 <Badge variant="outline">Available</Badge>
               </CardTitle>
             </CardHeader>
