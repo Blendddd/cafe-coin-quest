@@ -14,6 +14,7 @@ interface GameUser {
   daily_coin_limit: number;
   coins_earned_today: number;
   last_daily_reset: string;
+  last_game_played: string | null;
   created_at: string;
   updated_at: string;
 }

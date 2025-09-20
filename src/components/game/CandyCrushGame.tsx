@@ -18,7 +18,6 @@ interface GameState {
   grid: (GamePiece | null)[][];
   score: number;
   moves: number;
-  level: number;
   targetScore: number;
   isPlaying: boolean;
   gameOver: boolean;
@@ -30,7 +29,8 @@ interface Position {
 }
 
 const GRID_SIZE = 6;
-const INITIAL_MOVES = 20;
+const INITIAL_MOVES = 15; // Harder: fewer moves
+const TARGET_SCORE = 2500; // Harder: higher target
 const PIECE_TYPES: PieceType[] = ['candy-red', 'candy-blue', 'candy-green', 'candy-yellow', 'candy-orange', 'candy-purple'];
 
 const CandyCrushGame: React.FC = () => {
@@ -42,11 +42,12 @@ const CandyCrushGame: React.FC = () => {
     grid: [],
     score: 0,
     moves: INITIAL_MOVES,
-    level: 1,
-    targetScore: 1000,
+    targetScore: TARGET_SCORE,
     isPlaying: false,
     gameOver: false
   });
+
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
 
   const [selectedPiece, setSelectedPiece] = useState<Position | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -319,16 +320,27 @@ const CandyCrushGame: React.FC = () => {
     }
   };
 
+  // Check if user can play today
+  const canPlayToday = !hasPlayedToday;
+
   // Start new game
   const startGame = () => {
+    if (!canPlayToday) {
+      toast({
+        title: "Daily limit reached",
+        description: "Come back tomorrow for another challenge!",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const initialGrid = fillGrid(createEmptyGrid());
     
     setGameState({
       grid: initialGrid,
       score: 0,
       moves: INITIAL_MOVES,
-      level: 1,
-      targetScore: 1000,
+      targetScore: TARGET_SCORE,
       isPlaying: true,
       gameOver: false
     });
@@ -337,8 +349,8 @@ const CandyCrushGame: React.FC = () => {
     setIsProcessing(false);
     
     toast({
-      title: "Game Started!",
-      description: "Make matches to earn points and coins!",
+      title: "Daily Challenge Started!",
+      description: "Beat the target score with limited moves!",
     });
   };
 
@@ -347,50 +359,51 @@ const CandyCrushGame: React.FC = () => {
     if (gameState.gameOver) return;
     
     setGameState(prev => ({ ...prev, isPlaying: false, gameOver: true }));
+    setHasPlayedToday(true); // Mark as played today
     
     // Calculate coins based on score
     const coinsEarned = Math.floor(gameState.score / 100);
+    const isWin = gameState.score >= gameState.targetScore;
     
     if (coinsEarned > 0 && gameUser) {
       try {
         await awardCoins('candy-crush', gameState.score, 0);
         toast({
-          title: "Game Over!",
-          description: `You earned ${coinsEarned} coins! Final score: ${gameState.score}`,
+          title: isWin ? "Challenge Complete! 🎉" : "Challenge Failed",
+          description: isWin 
+            ? `Amazing! You earned ${coinsEarned} coins! Score: ${gameState.score}` 
+            : `You earned ${coinsEarned} coins. Try again tomorrow!`,
         });
       } catch (error) {
         toast({
-          title: "Game Over!",
+          title: isWin ? "Challenge Complete! 🎉" : "Challenge Failed",
           description: `Final score: ${gameState.score}`,
         });
       }
     } else {
       toast({
-        title: "Game Over!",
+        title: isWin ? "Challenge Complete! 🎉" : "Challenge Failed",
         description: `Final score: ${gameState.score}`,
       });
     }
-  }, [gameState.score, gameState.gameOver, gameUser, awardCoins, toast]);
+  }, [gameState.score, gameState.targetScore, gameState.gameOver, gameUser, awardCoins, toast]);
 
   // Check for game end conditions
   useEffect(() => {
-    if (gameState.isPlaying && gameState.moves <= 0) {
+    if (gameState.isPlaying && (gameState.moves <= 0 || gameState.score >= gameState.targetScore)) {
       endGame();
-    } else if (gameState.isPlaying && gameState.score >= gameState.targetScore) {
-      // Level up
-      setGameState(prev => ({
-        ...prev,
-        level: prev.level + 1,
-        targetScore: prev.targetScore * 1.5,
-        moves: prev.moves + 5
-      }));
-      
-      toast({
-        title: "Level Up!",
-        description: `Welcome to level ${gameState.level + 1}!`,
-      });
     }
-  }, [gameState.moves, gameState.score, gameState.targetScore, gameState.isPlaying, gameState.level, endGame]);
+  }, [gameState.moves, gameState.score, gameState.targetScore, gameState.isPlaying, endGame]);
+
+  // Check if user has played today
+  useEffect(() => {
+    if (gameUser?.last_game_played) {
+      const lastPlayed = new Date(gameUser.last_game_played);
+      const today = new Date();
+      const isToday = lastPlayed.toDateString() === today.toDateString();
+      setHasPlayedToday(isToday);
+    }
+  }, [gameUser]);
 
   // Get piece image
   const getPieceImage = (type: PieceType): string => {
@@ -436,14 +449,25 @@ const CandyCrushGame: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4">🍬 Candy Crush Cafe</h2>
+          <h2 className="text-3xl font-bold mb-4">🍬 Daily Candy Challenge</h2>
           <p className="text-muted-foreground max-w-md">
-            Match 3 or more candies to score points and earn coins! 
-            Swap adjacent pieces to create delicious combinations.
+            One challenging level per day! Score {TARGET_SCORE} points in just {INITIAL_MOVES} moves to win coins.
           </p>
+          {hasPlayedToday && (
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                ✅ You've completed today's challenge! Come back tomorrow for a new one.
+              </p>
+            </div>
+          )}
         </div>
-        <Button onClick={startGame} size="lg" className="px-8">
-          Start Playing
+        <Button 
+          onClick={startGame} 
+          size="lg" 
+          className="px-8"
+          disabled={hasPlayedToday}
+        >
+          {hasPlayedToday ? "Come Back Tomorrow" : "Start Daily Challenge"}
         </Button>
       </div>
     );
@@ -453,23 +477,25 @@ const CandyCrushGame: React.FC = () => {
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       {/* Game Stats */}
       <Card className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-sm text-muted-foreground">Score</p>
             <p className="text-xl font-bold text-primary">{gameState.score}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Moves</p>
+            <p className="text-sm text-muted-foreground">Moves Left</p>
             <p className="text-xl font-bold">{gameState.moves}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Level</p>
-            <p className="text-xl font-bold">{gameState.level}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Target</p>
             <p className="text-xl font-bold text-accent">{gameState.targetScore}</p>
           </div>
+        </div>
+        <div className="mt-4 w-full bg-muted rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min((gameState.score / gameState.targetScore) * 100, 100)}%` }}
+          />
         </div>
       </Card>
 
@@ -486,26 +512,23 @@ const CandyCrushGame: React.FC = () => {
       </Card>
 
       {/* Game Controls */}
-      <div className="flex justify-center space-x-4">
-        <Button onClick={startGame} variant="outline">
-          New Game
-        </Button>
-        {gameState.gameOver && (
-          <Button onClick={startGame}>
-            Play Again
-          </Button>
-        )}
-      </div>
+      {gameState.gameOver && (
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">
+            Challenge complete! Come back tomorrow for a new challenge.
+          </p>
+        </div>
+      )}
 
       {/* Instructions */}
       <Card className="p-4 bg-muted/50">
-        <h3 className="font-semibold mb-2">How to Play:</h3>
+        <h3 className="font-semibold mb-2">Daily Challenge Rules:</h3>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• Click a candy to select it</li>
           <li>• Click an adjacent candy to swap them</li>
           <li>• Match 3+ candies in a row to score points</li>
-          <li>• Earn coins based on your final score</li>
-          <li>• Reach the target score to level up!</li>
+          <li>• Reach {TARGET_SCORE} points in {INITIAL_MOVES} moves to win!</li>
+          <li>• One challenge per day - make it count!</li>
         </ul>
       </Card>
     </div>
