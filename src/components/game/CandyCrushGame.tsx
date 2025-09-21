@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useGameUser } from '@/hooks/useGameUser';
+import { useUserRole } from '@/hooks/useUserRole';
 
 // Game piece types
 type PieceType = 'candy-red' | 'candy-blue' | 'candy-green' | 'candy-yellow' | 'candy-orange' | 'candy-purple';
@@ -36,6 +37,7 @@ const PIECE_TYPES: PieceType[] = ['candy-red', 'candy-blue', 'candy-green', 'can
 const CandyCrushGame: React.FC = () => {
   const { toast } = useToast();
   const { gameUser, awardCoins } = useGameUser();
+  const { isAdmin } = useUserRole();
 
   // Game state
   const [gameState, setGameState] = useState<GameState>({
@@ -320,8 +322,8 @@ const CandyCrushGame: React.FC = () => {
     }
   };
 
-  // Check if user can play today
-  const canPlayToday = !hasPlayedToday;
+  // Check if user can play today (admins can always play)
+  const canPlayToday = !hasPlayedToday || isAdmin;
 
   // Start new game
   const startGame = () => {
@@ -453,10 +455,17 @@ const CandyCrushGame: React.FC = () => {
           <p className="text-muted-foreground max-w-md">
             One challenging level per day! Score {TARGET_SCORE} points in just {INITIAL_MOVES} moves to win coins.
           </p>
-          {hasPlayedToday && (
+          {hasPlayedToday && !isAdmin && (
             <div className="mt-4 p-3 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
                 ✅ You've completed today's challenge! Come back tomorrow for a new one.
+              </p>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+              <p className="text-sm text-primary">
+                🔧 Admin mode: You can play unlimited times for testing
               </p>
             </div>
           )}
@@ -465,9 +474,9 @@ const CandyCrushGame: React.FC = () => {
           onClick={startGame} 
           size="lg" 
           className="px-8"
-          disabled={hasPlayedToday}
+          disabled={hasPlayedToday && !isAdmin}
         >
-          {hasPlayedToday ? "Come Back Tomorrow" : "Start Daily Challenge"}
+          {hasPlayedToday && !isAdmin ? "Come Back Tomorrow" : isAdmin ? "Start Challenge (Admin)" : "Start Daily Challenge"}
         </Button>
       </div>
     );
