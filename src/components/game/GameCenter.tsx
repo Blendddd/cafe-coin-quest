@@ -77,25 +77,26 @@ export const GameCenter = () => {
             </CardContent>
           </Card>
 
-          <Card className="opacity-60">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" 
+                onClick={() => window.open('https://lanova-play-redeem.lovable.app/', '_blank')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                🧩 Puzzle Quest
-                <Badge variant="secondary">Coming Soon</Badge>
+                🏆 Lanova Food Quiz
+                <Badge variant="outline">Available</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Solve increasingly challenging puzzles to unlock coin rewards and special bonuses.
+                Test your knowledge about Lanova Restaurant's menu and Middle Eastern cuisine to earn coins!
               </p>
-              <div className="space-y-2 text-sm opacity-60">
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Coins per puzzle:</span>
-                  <span className="font-semibold">5-25 🪙</span>
+                  <span>Coins per quiz:</span>
+                  <span className="font-semibold">Up to 25 🪙</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Bonus multipliers:</span>
-                  <span className="font-semibold">2x-5x</span>
+                  <span>Play anytime:</span>
+                  <span className="font-semibold">External game</span>
                 </div>
               </div>
             </CardContent>
