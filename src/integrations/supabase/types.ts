@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          coin_adjustment: number | null
+          created_at: string
+          id: string
+          new_balance: number | null
+          old_balance: number | null
+          reason: string
+          target_user_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          coin_adjustment?: number | null
+          created_at?: string
+          id?: string
+          new_balance?: number | null
+          old_balance?: number | null
+          reason: string
+          target_user_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          coin_adjustment?: number | null
+          created_at?: string
+          id?: string
+          new_balance?: number | null
+          old_balance?: number | null
+          reason?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       game_sessions: {
         Row: {
           coins_earned: number
@@ -176,6 +212,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_user_coins: {
+        Args: {
+          p_coin_adjustment: number
+          p_reason: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       award_coins: {
         Args: {
           p_duration_seconds?: number
@@ -196,6 +240,22 @@ export type Database = {
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      get_all_users_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          coin_balance: number
+          coins_earned_today: number
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          last_game_played: string
+          phone: string
+          total_coins_earned: number
+          total_games: number
+          total_redemptions: number
+        }[]
       }
       get_staff_redemptions: {
         Args: Record<PropertyKey, never>

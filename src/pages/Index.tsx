@@ -4,11 +4,14 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import { GameCenter } from "@/components/game/GameCenter";
 import { RedemptionCenter } from "@/components/redemption/RedemptionCenter";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { useUserRole } from "@/hooks/useUserRole";
 import Footer from "@/components/Footer";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("hero");
   const [showMenu, setShowMenu] = useState(false);
+  const { isAdmin } = useUserRole();
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,10 +22,13 @@ const Index = () => {
       <main>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="container mx-auto px-4">
-            <TabsList className="grid w-full grid-cols-3 sticky top-20 z-40 bg-background/80 backdrop-blur-md">
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} sticky top-20 z-40 bg-background/80 backdrop-blur-md`}>
               <TabsTrigger value="hero">🏠 Home</TabsTrigger>
               <TabsTrigger value="games">🎮 Games</TabsTrigger>
               <TabsTrigger value="rewards">🎁 Rewards</TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="admin">⚙️ Admin</TabsTrigger>
+              )}
             </TabsList>
           </div>
           
@@ -46,6 +52,14 @@ const Index = () => {
               <RedemptionCenter />
             </div>
           </TabsContent>
+          
+          {isAdmin && (
+            <TabsContent value="admin" className="mt-6">
+              <div className="container mx-auto px-4">
+                <AdminDashboard />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
       <Footer />
