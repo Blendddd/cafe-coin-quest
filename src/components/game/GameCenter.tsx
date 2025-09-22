@@ -66,12 +66,12 @@ export const GameCenter = () => {
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Coins per 100 points:</span>
+                  <span>Coins per 200 points:</span>
                   <span className="font-semibold">1 🪙</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Max coins per game:</span>
-                  <span className="font-semibold">50 🪙</span>
+                  <span className="font-semibold">25 🪙</span>
                 </div>
               </div>
             </CardContent>
@@ -116,11 +116,11 @@ export const GameCenter = () => {
               <div className="space-y-2 text-sm opacity-60">
                 <div className="flex justify-between">
                   <span>Perfect round bonus:</span>
-                  <span className="font-semibold">100 🪙</span>
+                  <span className="font-semibold">25 🪙</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Daily challenges:</span>
-                  <span className="font-semibold">Special rewards</span>
+                  <span>Bonus rounds:</span>
+                  <span className="font-semibold">Up to 35 🪙</span>
                 </div>
               </div>
             </CardContent>
