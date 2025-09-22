@@ -39,22 +39,26 @@ const GameSection = () => {
 
           <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
             <div className="aspect-square bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
-              <div className="text-6xl group-hover:scale-110 transition-transform duration-300">☕</div>
+              <div className="text-6xl group-hover:scale-110 transition-transform duration-300">🏆</div>
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">Coffee Connect</h3>
+              <h3 className="text-xl font-semibold mb-2">Lanova Food Quiz</h3>
               <p className="text-muted-foreground mb-4">
-                Connect coffee beans and create the perfect brew combinations
+                Test your knowledge about Lanova Restaurant's menu and Middle Eastern cuisine
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-primary">Earn up to</span>
                   <div className="flex items-center space-x-1">
                     <span className="text-lg">🪙</span>
-                    <span className="font-semibold">75</span>
+                    <span className="font-semibold">25</span>
                   </div>
                 </div>
-                <Button variant="outline">Coming Soon</Button>
+                <Button 
+                  onClick={() => window.open('https://lanova-play-redeem.lovable.app/', '_blank')}
+                >
+                  Play Quiz
+                </Button>
               </div>
             </div>
           </Card>
