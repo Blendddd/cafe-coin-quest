@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useGameUser } from '@/hooks/useGameUser';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Question {
   id: number;
@@ -95,9 +96,11 @@ export const LanovaFoodQuiz = () => {
   const [showResult, setShowResult] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameStarted, setGameStarted] = useState(false);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
   
   const { gameUser, awardCoins } = useGameUser();
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
 
   const resetGame = useCallback(() => {
     setCurrentQuestion(0);
@@ -109,7 +112,19 @@ export const LanovaFoodQuiz = () => {
     setGameStarted(false);
   }, []);
 
+  // Check if user can play today (admins can always play)
+  const canPlayToday = !hasPlayedToday || isAdmin;
+
   const startGame = useCallback(() => {
+    if (!canPlayToday) {
+      toast({
+        title: "Daily limit reached",
+        description: "Come back tomorrow for another challenge!",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setGameStarted(true);
     // Start timer countdown
     const timer = setInterval(() => {
@@ -122,7 +137,7 @@ export const LanovaFoodQuiz = () => {
         return prev - 1;
       });
     }, 1000);
-  }, []);
+  }, [canPlayToday, toast]);
 
   const handleTimeUp = useCallback(() => {
     if (!gameComplete) {
@@ -164,6 +179,7 @@ export const LanovaFoodQuiz = () => {
 
   const completeQuiz = useCallback(async () => {
     setGameComplete(true);
+    setHasPlayedToday(true); // Mark as played today
     const finalScore = score + (selectedAnswer === QUIZ_QUESTIONS[currentQuestion]?.correctAnswer ? 1 : 0);
     
     if (gameUser) {
@@ -190,6 +206,16 @@ export const LanovaFoodQuiz = () => {
       }
     }
   }, [score, selectedAnswer, currentQuestion, gameUser, awardCoins, toast]);
+
+  // Check if user has played today
+  useEffect(() => {
+    if (gameUser?.last_game_played) {
+      const lastPlayed = new Date(gameUser.last_game_played);
+      const today = new Date();
+      const isToday = lastPlayed.toDateString() === today.toDateString();
+      setHasPlayedToday(isToday);
+    }
+  }, [gameUser]);
 
   if (!gameStarted) {
     return (
@@ -225,8 +251,28 @@ export const LanovaFoodQuiz = () => {
             </div>
           )}
           
-          <Button onClick={startGame} size="lg" className="w-full">
-            Start Quiz 🚀
+          {hasPlayedToday && !isAdmin && (
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                ✅ You've completed today's quiz! Come back tomorrow for a new challenge.
+              </p>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+              <p className="text-sm text-primary">
+                🔧 Admin mode: You can play unlimited times for testing
+              </p>
+            </div>
+          )}
+          
+          <Button 
+            onClick={startGame} 
+            size="lg" 
+            className="w-full"
+            disabled={hasPlayedToday && !isAdmin}
+          >
+            {hasPlayedToday && !isAdmin ? "Come Back Tomorrow" : isAdmin ? "Start Quiz (Admin)" : "Start Quiz 🚀"}
           </Button>
         </CardContent>
       </Card>
@@ -264,9 +310,17 @@ export const LanovaFoodQuiz = () => {
             </div>
           </div>
           
-          <Button onClick={resetGame} size="lg" className="w-full">
-            Play Again 🔄
-          </Button>
+          {isAdmin ? (
+            <Button onClick={resetGame} size="lg" className="w-full">
+              Play Again (Admin) 🔄
+            </Button>
+          ) : (
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <p className="text-muted-foreground">
+                🎯 Come back tomorrow for a new challenge!
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
