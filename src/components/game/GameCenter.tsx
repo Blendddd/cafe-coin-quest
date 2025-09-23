@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CandyCrushGame from './CandyCrushGame';
+import { LanovaQuizGame } from './LanovaQuizGame';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameUser } from '@/hooks/useGameUser';
 import { AuthModal } from '../auth/AuthModal';
@@ -31,6 +32,20 @@ export const GameCenter = () => {
           ← Back to Games
         </Button>
         <CandyCrushGame />
+      </div>
+    );
+  }
+
+  if (selectedGame === 'lanova-quiz') {
+    return (
+      <div className="space-y-4">
+        <Button 
+          onClick={() => setSelectedGame(null)} 
+          variant="outline"
+        >
+          ← Back to Games
+        </Button>
+        <LanovaQuizGame />
       </div>
     );
   }
@@ -78,7 +93,7 @@ export const GameCenter = () => {
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" 
-                onClick={() => window.open('https://lanova-play-redeem.lovable.app/', '_blank')}>
+                onClick={() => handleGameSelect('lanova-quiz')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 🏆 Lanova Food Quiz
@@ -95,8 +110,8 @@ export const GameCenter = () => {
                   <span className="font-semibold">Up to 25 🪙</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Play anytime:</span>
-                  <span className="font-semibold">External game</span>
+                  <span>Play directly:</span>
+                  <span className="font-semibold">Integrated game</span>
                 </div>
               </div>
             </CardContent>
