@@ -14,20 +14,28 @@ export const LanovaQuizGame = () => {
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      // Only accept messages from the quiz domain
-      if (event.origin !== 'https://lanova-play-redeem.lovable.app') {
-        return;
-      }
+      // Debug: Log all messages received
+      console.log('🎯 Received message from:', event.origin);
+      console.log('🎯 Message data:', event.data);
+      
+      // Accept messages from any origin for debugging
+      // if (event.origin !== 'https://lanova-play-redeem.lovable.app') {
+      //   console.log('Message rejected - wrong origin:', event.origin);
+      //   return;
+      // }
 
       try {
         const data = event.data;
+        console.log('🎯 Processing quiz message:', data);
         
         if (data.type === 'QUIZ_COMPLETED' && data.score !== undefined) {
-          console.log('Quiz completed with score:', data.score);
+          console.log('🎯 Quiz completed with score:', data.score);
           
           if (gameUser) {
+            console.log('🎯 Awarding coins for user:', gameUser.id);
             // Award coins based on score (max 25 coins for perfect score)
             const result = await awardCoins('lanova-quiz', data.score);
+            console.log('🎯 Award coins result:', result);
             
             if (result?.success) {
               toast({
@@ -41,19 +49,26 @@ export const LanovaQuizGame = () => {
                 variant: "destructive",
               });
             }
+          } else {
+            console.log('🎯 No gameUser found when trying to award coins');
           }
         } else if (data.type === 'QUIZ_STARTED') {
           setGameStarted(true);
-          console.log('Quiz game started');
+          console.log('🎯 Quiz game started');
+        } else {
+          console.log('🎯 Unknown message type or missing score:', data);
         }
       } catch (error) {
-        console.error('Error handling quiz message:', error);
+        console.error('🎯 Error handling quiz message:', error);
       }
     };
 
+    // Debug: Log that we're setting up the message listener
+    console.log('🎯 Setting up message listener for Lanova Quiz');
     window.addEventListener('message', handleMessage);
     
     return () => {
+      console.log('🎯 Removing message listener for Lanova Quiz');
       window.removeEventListener('message', handleMessage);
     };
   }, [gameUser, awardCoins, toast]);
