@@ -22,6 +22,15 @@ const App = () => {
         console.log('VANTA.CLOUDS:', (window as any).VANTA?.CLOUDS);
         
         if (vantaRef.current && !vantaEffect.current && (window as any).VANTA && (window as any).VANTA.CLOUDS) {
+          // Log container dimensions for debugging
+          const rect = vantaRef.current.getBoundingClientRect();
+          console.log('Vanta container dimensions:', {
+            width: rect.width,
+            height: rect.height,
+            offsetWidth: vantaRef.current.offsetWidth,
+            offsetHeight: vantaRef.current.offsetHeight
+          });
+          
           vantaEffect.current = (window as any).VANTA.CLOUDS({
             el: vantaRef.current,
             mouseControls: true,
@@ -37,8 +46,25 @@ const App = () => {
             speed: 1.10
           });
           console.log('Vanta clouds effect initialized successfully');
+          
+          // Debug: Check if canvas was created
+          const canvas = vantaRef.current.querySelector('canvas');
+          if (canvas) {
+            console.log('Vanta canvas created:', {
+              width: canvas.width,
+              height: canvas.height,
+              style: canvas.style.cssText
+            });
+          } else {
+            console.warn('No Vanta canvas found in container');
+          }
         } else {
-          console.log('Vanta not ready yet, retrying...');
+          console.log('Vanta not ready yet, retrying...', {
+            hasElement: !!vantaRef.current,
+            hasEffect: !!vantaEffect.current,
+            hasVanta: !!(window as any).VANTA,
+            hasClouds: !!(window as any).VANTA?.CLOUDS
+          });
           setTimeout(initVanta, 100);
         }
       } catch (error) {
@@ -59,8 +85,19 @@ const App = () => {
   }, []);
 
   return (
-    <div ref={vantaRef} className="min-h-screen">
-      <div className="relative z-10">
+    <div className="relative">
+      {/* Vanta background container */}
+      <div 
+        ref={vantaRef} 
+        className="fixed inset-0 w-full h-full"
+        style={{ 
+          background: 'linear-gradient(135deg, #87CEEB 0%, #E0F6FF 100%)', // Temporary fallback to see container
+          zIndex: 0 
+        }}
+      />
+      
+      {/* Content overlay */}
+      <div className="relative z-10 min-h-screen">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TooltipProvider>
