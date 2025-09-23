@@ -29,23 +29,31 @@ interface Redemption {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  // Appetizers
-  { id: '1', name: 'Bruschetta', description: 'Fresh tomatoes, basil, and mozzarella on toasted bread', coin_price: 150, category: 'Appetizers', emoji: '🍞' },
-  { id: '2', name: 'Calamari Rings', description: 'Crispy fried squid with marinara sauce', coin_price: 200, category: 'Appetizers', emoji: '🦑' },
+  // Appetizers & Mezze
+  { id: '1', name: 'Hummus with Bread', description: 'Creamy chickpea dip served with fresh Kurdish bread', coin_price: 120, category: 'Appetizers', emoji: '🫓' },
+  { id: '2', name: 'Baba Ganoush', description: 'Smoky roasted eggplant dip with tahini', coin_price: 140, category: 'Appetizers', emoji: '🍆' },
+  { id: '3', name: 'Tabbouleh Salad', description: 'Fresh parsley salad with tomatoes and bulgur', coin_price: 160, category: 'Appetizers', emoji: '🥗' },
+  { id: '4', name: 'Stuffed Grape Leaves', description: 'Traditional dolma filled with rice and herbs', coin_price: 180, category: 'Appetizers', emoji: '🍃' },
   
   // Main Courses
-  { id: '3', name: 'Margherita Pizza', description: 'Classic pizza with fresh mozzarella and basil', coin_price: 400, category: 'Main Courses', emoji: '🍕' },
-  { id: '4', name: 'Pasta Carbonara', description: 'Creamy pasta with pancetta and parmesan', coin_price: 350, category: 'Main Courses', emoji: '🍝' },
-  { id: '5', name: 'Grilled Salmon', description: 'Fresh Atlantic salmon with lemon butter sauce', coin_price: 500, category: 'Main Courses', emoji: '🐟' },
-  { id: '6', name: 'Chicken Parmigiana', description: 'Breaded chicken breast with marinara and mozzarella', coin_price: 450, category: 'Main Courses', emoji: '🍗' },
+  { id: '5', name: 'Kurdish Kebab', description: 'Grilled lamb skewers with onions and spices', coin_price: 450, category: 'Main Courses', emoji: '🍢' },
+  { id: '6', name: 'Chicken Shawarma', description: 'Marinated chicken with garlic sauce and vegetables', coin_price: 350, category: 'Main Courses', emoji: '🌯' },
+  { id: '7', name: 'Lamb Biryani', description: 'Fragrant rice dish with tender lamb and saffron', coin_price: 500, category: 'Main Courses', emoji: '🍛' },
+  { id: '8', name: 'Falafel Plate', description: 'Crispy chickpea patties with tahini sauce', coin_price: 300, category: 'Main Courses', emoji: '🧆' },
+  { id: '9', name: 'Mansaf', description: 'Traditional lamb with yogurt sauce and rice', coin_price: 550, category: 'Main Courses', emoji: '🍖' },
+  { id: '10', name: 'Kurdish Kufta', description: 'Spiced meatballs in tomato sauce with bread', coin_price: 400, category: 'Main Courses', emoji: '🍲' },
   
   // Desserts
-  { id: '7', name: 'Tiramisu', description: 'Classic Italian coffee-flavored dessert', coin_price: 180, category: 'Desserts', emoji: '🍰' },
-  { id: '8', name: 'Gelato Scoop', description: 'Choice of vanilla, chocolate, or strawberry', coin_price: 100, category: 'Desserts', emoji: '🍨' },
+  { id: '11', name: 'Baklava', description: 'Layered pastry with nuts and honey syrup', coin_price: 150, category: 'Desserts', emoji: '🥮' },
+  { id: '12', name: 'Muhallabia', description: 'Creamy milk pudding with rose water and pistachios', coin_price: 120, category: 'Desserts', emoji: '🍮' },
+  { id: '13', name: 'Halva', description: 'Traditional sesame seed sweet', coin_price: 100, category: 'Desserts', emoji: '🍯' },
   
   // Beverages
-  { id: '9', name: 'Espresso', description: 'Rich and bold Italian coffee', coin_price: 80, category: 'Beverages', emoji: '☕' },
-  { id: '10', name: 'Fresh Orange Juice', description: 'Freshly squeezed orange juice', coin_price: 120, category: 'Beverages', emoji: '🍊' },
+  { id: '14', name: 'Kurdish Tea', description: 'Traditional strong black tea served in glasses', coin_price: 60, category: 'Beverages', emoji: '🍵' },
+  { id: '15', name: 'Turkish Coffee', description: 'Rich, aromatic coffee prepared traditionally', coin_price: 80, category: 'Beverages', emoji: '☕' },
+  { id: '16', name: 'Fresh Pomegranate Juice', description: 'Freshly squeezed pomegranate juice', coin_price: 140, category: 'Beverages', emoji: '🧃' },
+  { id: '17', name: 'Ayran', description: 'Refreshing yogurt drink with mint', coin_price: 90, category: 'Beverages', emoji: '🥛' },
+  { id: '18', name: 'Jallab', description: 'Traditional date syrup drink with pine nuts', coin_price: 110, category: 'Beverages', emoji: '🥤' },
 ];
 
 export const RedemptionCenter = () => {
@@ -120,9 +128,9 @@ export const RedemptionCenter = () => {
     <>
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2">🍽️ Rewards & Menu</h2>
+          <h2 className="text-3xl font-bold mb-2">🪙 La Nova Coin Redemption</h2>
           <p className="text-muted-foreground">
-            Browse our menu and redeem your coins for delicious La Nova dishes!
+            Redeem your hard-earned coins for authentic Kurdish and Middle Eastern dishes at La Nova RestCafe!
           </p>
           {gameUser && (
             <Badge variant="secondary" className="mt-2">
@@ -131,30 +139,15 @@ export const RedemptionCenter = () => {
           )}
         </div>
 
-        {/* Menu Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">🍽️ La Nova Cafe Menu</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-hidden rounded-lg">
-              <iframe
-                src="https://lanova-restcafe.com/index-kurdish.html"
-                className="w-full h-[600px] border-0"
-                title="La Nova Cafe Menu"
-                loading="lazy"
-              />
-            </div>
+        {/* Redemption Instructions */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-6 text-center">
+            <h3 className="text-xl font-semibold mb-2">🎯 How to Redeem</h3>
+            <p className="text-muted-foreground">
+              Select any item below, confirm your purchase, and show your redemption code at La Nova RestCafe to enjoy authentic Kurdish cuisine!
+            </p>
           </CardContent>
         </Card>
-
-        {/* Redemption Center Section */}
-        <div className="text-center pt-6">
-          <h3 className="text-2xl font-bold mb-2">🪙 Coin Redemption</h3>
-          <p className="text-muted-foreground">
-            Trade your hard-earned coins for these special rewards!
-          </p>
-        </div>
 
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 justify-center">
@@ -229,7 +222,7 @@ export const RedemptionCenter = () => {
             <CardContent className="p-6 text-center">
               <h3 className="text-lg font-semibold mb-2">Ready to redeem rewards? 🎁</h3>
               <p className="text-muted-foreground mb-4">
-                Sign in to start redeeming your coins for delicious food at La Nova!
+                Sign in to start redeeming your coins for authentic Kurdish dishes at La Nova RestCafe!
               </p>
               <Button onClick={() => setAuthModalOpen(true)} size="lg">
                 Sign In to Redeem
