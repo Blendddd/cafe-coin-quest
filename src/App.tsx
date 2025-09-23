@@ -15,24 +15,42 @@ const App = () => {
   const vantaEffect = useRef<any>(null);
 
   useEffect(() => {
-    if (vantaRef.current && !vantaEffect.current) {
-      vantaEffect.current = (window as any).VANTA.CLOUDS({
-        el: vantaRef.current,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 200.00,
-        minWidth: 200.00,
-        skyColor: 0x6db7d9,
-        cloudColor: 0x90a5c5,
-        sunColor: 0x311c06,
-        sunGlareColor: 0xff3500,
-        sunlightColor: 0xff7c00,
-        speed: 1.10
-      });
-    }
+    const initVanta = () => {
+      try {
+        console.log('Initializing Vanta clouds effect...');
+        console.log('Window VANTA:', (window as any).VANTA);
+        console.log('VANTA.CLOUDS:', (window as any).VANTA?.CLOUDS);
+        
+        if (vantaRef.current && !vantaEffect.current && (window as any).VANTA && (window as any).VANTA.CLOUDS) {
+          vantaEffect.current = (window as any).VANTA.CLOUDS({
+            el: vantaRef.current,
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            skyColor: 0x6db7d9,
+            cloudColor: 0x90a5c5,
+            sunColor: 0x311c06,
+            sunGlareColor: 0xff3500,
+            sunlightColor: 0xff7c00,
+            speed: 1.10
+          });
+          console.log('Vanta clouds effect initialized successfully');
+        } else {
+          console.log('Vanta not ready yet, retrying...');
+          setTimeout(initVanta, 100);
+        }
+      } catch (error) {
+        console.error('Error initializing Vanta effect:', error);
+      }
+    };
+
+    // Wait a bit for scripts to load, then try to initialize
+    const timer = setTimeout(initVanta, 100);
 
     return () => {
+      clearTimeout(timer);
       if (vantaEffect.current) {
         vantaEffect.current.destroy();
         vantaEffect.current = null;
