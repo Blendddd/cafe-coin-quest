@@ -54,11 +54,7 @@ const GameSection = () => {
                     <span className="font-semibold">25</span>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => window.open('https://lanova-play-redeem.lovable.app/', '_blank')}
-                >
-                  Play Quiz
-                </Button>
+                <Button>Play Now</Button>
               </div>
             </div>
           </Card>

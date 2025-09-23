@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CandyCrushGame from './CandyCrushGame';
-import { LanovaQuizGame } from './LanovaQuizGame';
+import { LanovaFoodQuiz } from './LanovaFoodQuiz';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameUser } from '@/hooks/useGameUser';
 import { AuthModal } from '../auth/AuthModal';
@@ -45,7 +45,7 @@ export const GameCenter = () => {
         >
           ← Back to Games
         </Button>
-        <LanovaQuizGame />
+        <LanovaFoodQuiz />
       </div>
     );
   }
