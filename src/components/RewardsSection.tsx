@@ -5,45 +5,45 @@ import { Badge } from "@/components/ui/badge";
 const RewardsSection = () => {
   const rewards = [
     {
-      name: "Free Coffee",
+      name: "Premium Badge",
       price: 150,
-      emoji: "☕",
-      description: "Any size coffee of your choice",
+      emoji: "🏅",
+      description: "Exclusive premium player badge",
       popular: false
     },
     {
-      name: "Croissant",
+      name: "Double XP Boost",
       price: 200,
-      emoji: "🥐",
-      description: "Fresh baked croissant",
+      emoji: "⚡",
+      description: "2x coin multiplier for next game",
       popular: true
     },
     {
-      name: "Sandwich",
+      name: "Custom Avatar",
       price: 400,
-      emoji: "🥪",
-      description: "Any sandwich from our menu",
+      emoji: "🎭",
+      description: "Unlock special avatar designs",
       popular: false
     },
     {
-      name: "Pasta Dish",
+      name: "VIP Status",
       price: 600,
-      emoji: "🍝",
-      description: "Full pasta meal with drink",
+      emoji: "👑",
+      description: "30 days of VIP gaming privileges",
       popular: true
     },
     {
-      name: "Pizza Slice",
+      name: "Game Skin Pack",
       price: 300,
-      emoji: "🍕",
-      description: "Any pizza slice",
+      emoji: "🎨",
+      description: "Exclusive game themes and colors",
       popular: false
     },
     {
-      name: "Full Meal",
+      name: "Legend Rank",
       price: 1000,
-      emoji: "🍽️",
-      description: "Complete meal with appetizer, main, and dessert",
+      emoji: "🏆",
+      description: "Permanent legend status and perks",
       popular: false
     }
   ];
@@ -56,7 +56,7 @@ const RewardsSection = () => {
             🏆 Rewards Menu
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Trade your hard-earned coins for delicious food at La Nova. The more you play, the more you save!
+            Trade your hard-earned coins for exclusive gaming rewards and perks. The more you play, the more you unlock!
           </p>
         </div>
 
@@ -106,13 +106,13 @@ const RewardsSection = () => {
               </div>
               <div>
                 <div className="text-3xl mb-2">2️⃣</div>
-                <h4 className="font-semibold mb-1">Show QR Code</h4>
-                <p className="text-sm text-muted-foreground">Present your redemption code</p>
+                <h4 className="font-semibold mb-1">Confirm Purchase</h4>
+                <p className="text-sm text-muted-foreground">Complete your reward redemption</p>
               </div>
               <div>
                 <div className="text-3xl mb-2">3️⃣</div>
-                <h4 className="font-semibold mb-1">Enjoy Your Food</h4>
-                <p className="text-sm text-muted-foreground">Staff verifies and serves your meal</p>
+                <h4 className="font-semibold mb-1">Enjoy Your Reward</h4>
+                <p className="text-sm text-muted-foreground">Unlock and enjoy your new gaming perk</p>
               </div>
             </div>
           </Card>
