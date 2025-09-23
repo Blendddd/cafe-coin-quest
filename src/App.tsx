@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,22 +10,57 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const vantaRef = useRef<HTMLDivElement>(null);
+  const vantaEffect = useRef<any>(null);
+
+  useEffect(() => {
+    if (vantaRef.current && !vantaEffect.current) {
+      vantaEffect.current = (window as any).VANTA.CLOUDS({
+        el: vantaRef.current,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        skyColor: 0x6db7d9,
+        cloudColor: 0x90a5c5,
+        sunColor: 0x311c06,
+        sunGlareColor: 0xff3500,
+        sunlightColor: 0xff7c00,
+        speed: 1.10
+      });
+    }
+
+    return () => {
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div ref={vantaRef} className="min-h-screen">
+      <div className="relative z-10">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </div>
+    </div>
+  );
+};
 
 export default App;
