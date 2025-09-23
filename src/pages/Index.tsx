@@ -6,7 +6,7 @@ import { GameCenter } from "@/components/game/GameCenter";
 import { RedemptionCenter } from "@/components/redemption/RedemptionCenter";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { useUserRole } from "@/hooks/useUserRole";
-import Footer from "@/components/Footer";
+
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("hero");
@@ -62,7 +62,7 @@ const Index = () => {
           )}
         </Tabs>
       </main>
-      <Footer />
+      
     </div>
   );
 };
