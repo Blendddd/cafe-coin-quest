@@ -5,6 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useGameUser } from '@/hooks/useGameUser';
 import { useUserRole } from '@/hooks/useUserRole';
 
+// Import candy images
+import candyRed from '@/assets/candy-red.png';
+import candyBlue from '@/assets/candy-blue.png';
+import candyGreen from '@/assets/candy-green.png';
+import candyYellow from '@/assets/candy-yellow.png';
+import candyOrange from '@/assets/candy-orange.png';
+import candyPurple from '@/assets/candy-purple.png';
+
 // Game piece types
 type PieceType = 'candy-red' | 'candy-blue' | 'candy-green' | 'candy-yellow' | 'candy-orange' | 'candy-purple';
 
@@ -410,12 +418,12 @@ const CandyCrushGame: React.FC = () => {
   // Get piece image
   const getPieceImage = (type: PieceType): string => {
     const imageMap: Record<PieceType, string> = {
-      'candy-red': '/src/assets/candy-red.png',
-      'candy-blue': '/src/assets/candy-blue.png',
-      'candy-green': '/src/assets/candy-green.png',
-      'candy-yellow': '/src/assets/candy-yellow.png',
-      'candy-orange': '/src/assets/candy-orange.png',
-      'candy-purple': '/src/assets/candy-purple.png',
+      'candy-red': candyRed,
+      'candy-blue': candyBlue,
+      'candy-green': candyGreen,
+      'candy-yellow': candyYellow,
+      'candy-orange': candyOrange,
+      'candy-purple': candyPurple,
     };
     return imageMap[type];
   };
