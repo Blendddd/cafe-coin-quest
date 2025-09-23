@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuthSimple';
 
 interface AuthModalProps {
   open: boolean;
@@ -18,7 +18,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
@@ -32,7 +32,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     

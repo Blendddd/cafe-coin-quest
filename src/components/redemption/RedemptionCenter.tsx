@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuthSimple';
 import { useGameUser } from '@/hooks/useGameUser';
 import { AuthModal } from '../auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';

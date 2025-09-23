@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CandyCrushGame from './CandyCrushGame';
 import { LanovaFoodQuiz } from './LanovaFoodQuiz';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuthSimple';
 import { useGameUser } from '@/hooks/useGameUser';
 import { AuthModal } from '../auth/AuthModal';
 

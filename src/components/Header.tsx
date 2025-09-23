@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuthSimple";
 import { useGameUser } from "@/hooks/useGameUser";
 import { AuthModal } from "./auth/AuthModal";
 
