@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import MenuModal from "./MenuModal";
@@ -10,9 +11,46 @@ interface HeroProps {
 }
 
 const Hero = ({ onStartPlaying, onViewMenu, showMenu, onCloseMenu }: HeroProps) => {
+  const vantaRef = useRef<HTMLElement>(null);
+  const vantaEffect = useRef<any>(null);
+
+  useEffect(() => {
+    if (vantaRef.current && !vantaEffect.current) {
+      vantaEffect.current = (window as any).VANTA.BIRDS({
+        el: vantaRef.current,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        scale: 1.00,
+        scaleMobile: 1.00,
+        colorMode: "lerp",
+        birdSize: 2.80,
+        wingSpan: 31.00,
+        speedLimit: 6.00,
+        separation: 70.00,
+        alignment: 31.00,
+        cohesion: 33.00,
+        quantity: 3.00
+      });
+    }
+
+    return () => {
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
   return (
-    <section id="home" className="py-20 bg-gradient-to-br from-background to-secondary">
-      <div className="container mx-auto px-4 text-center">
+    <section 
+      ref={vantaRef}
+      id="home" 
+      className="py-20 bg-gradient-to-br from-background to-secondary relative"
+    >
+      <div className="container mx-auto px-4 text-center relative z-10">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
             Play. Earn. <span className="text-primary">Taste.</span>
