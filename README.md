@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/8003b8b0-b9c8-47f8-880b-b5974f0bb424
+**URL**: https://cafe-coin-quest.lovable.app/
 
 ## How can I edit this code?
 
